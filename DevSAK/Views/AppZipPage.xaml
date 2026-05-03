@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DevSAK.Views.AppZipPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationBackgroundBrush}">
+
+    <Page.Resources>
+        <Style x:Key="SectionCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource ApplicationTileBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource ApplicationBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="24,12" BorderBrush="{ThemeResource ApplicationBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Button x:Name="BackButton"
+                        Click="BackButton_Click"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="8"
+                        HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72B;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                        <TextBlock Text="Voltar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                    <FontIcon Glyph="&#xF012;" Foreground="{ThemeResource ApplicationAccentBrush}" FontFamily="Segoe Fluent Icons" />
+                    <TextBlock Text="Compactador (ZIP)" FontWeight="Bold" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24">
+            <StackPanel HorizontalAlignment="Center" MaxWidth="1200" Spacing="24">
+
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Configurações de Pacote" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16" />
+                        <Border Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="20">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Diretório de Origem" FontWeight="SemiBold" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Text="{Binding SourceDirectory, Mode=TwoWay}" PlaceholderText="C:\Caminho\Para\Publish" />
+                                        <Button Grid.Column="1" Click="BrowseSourceButton_Click">
+                                            <FontIcon Glyph="&#xED25;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Diretório de Destino" FontWeight="SemiBold" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Text="{Binding DestinationDirectory, Mode=TwoWay}" PlaceholderText="C:\Caminho\De\Saída" />
+                                        <Button Grid.Column="1" Click="BrowseDestinationButton_Click">
+                                            <FontIcon Glyph="&#xED25;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Nome do Arquivo" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding ZipName, Mode=TwoWay}" IsReadOnly="{Binding UseAutomaticZipName}" PlaceholderText="Ex: Deploy_Final" />
+                                    <CheckBox Content="Nome automático com timestamp" IsChecked="{Binding UseAutomaticZipName, Mode=TwoWay}" FontSize="12" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Filtros e Regras" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16" />
+                        <Border Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="12">
+                                <CheckBox x:Name="DateFilterCheckBox" Content="Filtrar por data de modificação" IsChecked="{Binding UseDateFilter, Mode=TwoWay}" FontWeight="SemiBold" />
+                                <DatePicker Date="{Binding StartDateOffset, Mode=TwoWay}" IsEnabled="{Binding UseDateFilter}" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SectionCardStyle}">
+                            <Pivot>
+                                <PivotItem Header="Arquivos">
+                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="IgnoredFilesInput" PlaceholderText="web.config..." KeyDown="IgnoredFilesInput_KeyDown" />
+                                            <Button Grid.Column="1" Click="AddIgnoredFileButton_Click">
+                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                            </Button>
+                                        </Grid>
+                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredFilesList}" x:Name="IgnoredFilesListView" />
+                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFileButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                    </Grid>
+                                </PivotItem>
+                                <PivotItem Header="Pastas">
+                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="IgnoredFoldersInput" PlaceholderText="bin, obj..." KeyDown="IgnoredFoldersInput_KeyDown" />
+                                            <Button Grid.Column="1" Click="AddIgnoredFolderButton_Click">
+                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                            </Button>
+                                        </Grid>
+                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredFoldersList}" x:Name="IgnoredFoldersListView" />
+                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFolderButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                    </Grid>
+                                </PivotItem>
+                                <PivotItem Header="Extensões">
+                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="IgnoredExtensionsInput" PlaceholderText=".log..." KeyDown="IgnoredExtensionsInput_KeyDown" />
+                                            <Button Grid.Column="1" Click="AddIgnoredExtensionButton_Click">
+                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                            </Button>
+                                        </Grid>
+                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredExtensionsList}" x:Name="IgnoredExtensionsListView" />
+                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredExtensionButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                    </Grid>
+                                </PivotItem>
+                            </Pivot>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <Border Style="{StaticResource SectionCardStyle}" Background="{ThemeResource ApplicationSurfaceBrush}">
+                    <StackPanel Spacing="16">
+                        <Grid>
+                            <TextBlock Text="Execução" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ProgressPercentage, Mode=OneWay}" 
+                                       HorizontalAlignment="Right" 
+                                       Foreground="#009628" 
+                                       FontWeight="Bold" FontSize="16" />
+                        </Grid>
+
+                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Foreground="#009628" Height="8" CornerRadius="4" />
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Status, Mode=OneWay}" 
+                                       FontSize="13" 
+                                       Foreground="{ThemeResource ApplicationSubTextBrush}" 
+                                       FontStyle="Italic" 
+                                       TextWrapping="Wrap" 
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="2" 
+                                       HorizontalAlignment="Stretch"
+                                       ToolTipService.ToolTip="{Binding Status, Mode=OneWay}" />
+                            <TextBlock Text="{Binding CurrentZipEntry, Mode=OneWay}"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource ApplicationTextBrush}"
+                                       Opacity="0.75"
+                                       FontFamily="Consolas"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1"
+                                       ToolTipService.ToolTip="{Binding CurrentZipEntry, Mode=OneWay}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                            <Button x:Name="CancelButton" Content="Cancelar Operação" Padding="16,8"
+                                    Click="CancelButton_Click" 
+                                    IsEnabled="{Binding IsProcessing}" />
+                            <Button x:Name="StartButton" Content="Iniciar Compactação" 
+                                    Background="{ThemeResource ApplicationAccentBrush}" 
+                                    Foreground="White" FontWeight="Bold" Padding="32,10"
+                                    Click="StartButton_Click" 
+                                    IsEnabled="{Binding IsNotProcessing}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

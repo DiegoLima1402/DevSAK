@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DevSAK (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DevSAK (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

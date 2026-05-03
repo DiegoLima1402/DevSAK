@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DevSAK.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DevSAK">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt" />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="RootGrid" Loaded="RootGrid_Loaded">
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.ThemeDictionaries>
+                    <ResourceDictionary x:Key="Light">
+                        <ImageSource x:Key="AppLogo">ms-appx:///Assets/logo-light.png</ImageSource>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Dark">
+                        <ImageSource x:Key="AppLogo">ms-appx:///Assets/logo-dark.png</ImageSource>
+                    </ResourceDictionary>
+                </ResourceDictionary.ThemeDictionaries>
+
+                <ControlTemplate x:Key="TileButtonTemplate" TargetType="Button">
+                    <Grid x:Name="TemplateRoot" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="RootScale" ScaleX="1" ScaleY="1" />
+                        </Grid.RenderTransform>
+
+                        <Border x:Name="CardBorder"
+                                Background="{ThemeResource ApplicationTileBrush}"
+                                BorderBrush="{ThemeResource ApplicationBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                            <Border.Shadow>
+                                <ThemeShadow />
+                            </Border.Shadow>
+
+                            <ContentPresenter Padding="20" />
+                        </Border>
+
+                        <Border x:Name="HoverOverlay" 
+                                CornerRadius="12" 
+                                Background="{ThemeResource ApplicationAccentBrush}" 
+                                Opacity="0" 
+                                IsHitTestVisible="False" />
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0.05" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.1" />
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="0.97" Duration="0:0:0.05" />
+                                        <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="0.97" Duration="0:0:0.05" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </ResourceDictionary>
+        </Grid.Resources>
+
+        <ScrollViewer x:Name="HomeScrollViewer" Padding="0,0,0,40">
+            <StackPanel MaxWidth="1000" HorizontalAlignment="Center" Spacing="40" Margin="40,40,40,0">
+
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <Image Source="{ThemeResource AppLogo}" 
+                           Width="220" 
+                           Height="80" 
+                           Stretch="Uniform" 
+                           HorizontalAlignment="Center"/>
+
+                    <TextBlock Text="Seu canivete suíço de produtividade." 
+                               FontSize="18" 
+                               Foreground="{ThemeResource ApplicationSubTextBrush}" 
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Ferramentas Disponíveis" 
+                               FontSize="20" 
+                               FontWeight="SemiBold" 
+                               HorizontalAlignment="Center"/>
+
+                    <GridView x:Name="TileGrid" SelectionMode="None" IsItemClickEnabled="False" HorizontalAlignment="Center">
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
+
+                        <Button Template="{StaticResource TileButtonTemplate}" 
+                                Click="TileButton_Click" 
+                                Tag="AspNetAppZip" 
+                                Width="460"
+                                Margin="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Width="64"
+                                        Height="64"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource ApplicationAccentBrush}"
+                                        VerticalAlignment="Top">
+                                    <FontIcon Glyph="&#xF012;"
+                                              FontFamily="Segoe Fluent Icons"
+                                              FontSize="28"
+                                              Foreground="White" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Compactador (ZIP)"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource ApplicationTextBrush}" />
+                                    <TextBlock Text="Compactação inteligente para deploys rápidos. Inclui filtros de data, ignorar arquivos, pastas, etc."
+                                               FontSize="13"
+                                               Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+
+                        <Button Template="{StaticResource TileButtonTemplate}"
+                                Click="TileButton_Click"
+                                Tag="ExportPemCertificate"
+                                Width="460"
+                                Margin="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Width="64"
+                                        Height="64"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource ApplicationAccentBrush}"
+                                        VerticalAlignment="Top">
+                                    <FontIcon Glyph="&#xEB95;"
+                                              FontFamily="Segoe Fluent Icons"
+                                              FontSize="28"
+                                              Foreground="White" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Exportar PEM de Certificado"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource ApplicationTextBrush}" />
+                                    <TextBlock Text="Extrair certificado e/ou chave privada para arquivos PEM com opções de saída e log."
+                                               FontSize="13"
+                                               Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+
+                        <Button Template="{StaticResource TileButtonTemplate}"
+                                Click="TileButton_Click"
+                                Tag="MySqlBackupRestore"
+                                Width="460"
+                                Margin="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Width="64"
+                                        Height="64"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource ApplicationAccentBrush}"
+                                        VerticalAlignment="Top">
+                                    <FontIcon Glyph="&#xe8cb;"
+                                              FontFamily="Segoe Fluent Icons"
+                                              FontSize="28"
+                                              Foreground="White" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="MySQL Backup / Restore"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource ApplicationTextBrush}" />
+                                    <TextBlock Text="Backup e importação de bancos MySQL com CLI nativa, logs ao vivo e cancelamento seguro."
+                                               FontSize="13"
+                                               Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+                    </GridView>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Frame x:Name="AppFrame" Visibility="Collapsed" Navigated="AppFrame_Navigated">
+            <Frame.ContentTransitions>
+                <TransitionCollection>
+                    <NavigationThemeTransition>
+                        <DrillInNavigationTransitionInfo />
+                    </NavigationThemeTransition>
+                </TransitionCollection>
+            </Frame.ContentTransitions>
+        </Frame>
+
+        <Button x:Name="ThemeToggleButton" 
+                Click="ThemeToggleButton_Click"
+                VerticalAlignment="Top" 
+                HorizontalAlignment="Right" 
+                Margin="7"
+                Width="44" Height="44" 
+                CornerRadius="22"
+                ToolTipService.ToolTip="Trocar Tema">
+            <FontIcon x:Name="ThemeToggleIcon" Glyph="&#xE706;" FontFamily="Segoe Fluent Icons" FontSize="18" />
+        </Button>
+
+        <TextBlock x:Name="VersionTextBlock"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Margin="0,0,16,12"
+                   FontSize="11"
+                   Foreground="{ThemeResource ApplicationSubTextBrush}"
+                   Opacity="0.9"
+                   IsHitTestVisible="False" />
+
+        <TextBlock x:Name="AuthorTextBlock"
+           HorizontalAlignment="Left"
+           VerticalAlignment="Bottom"
+           Margin="12,0,0,12"
+           FontSize="11"
+           Foreground="{ThemeResource ApplicationSubTextBrush}"
+           Opacity="0.9"
+           IsHitTestVisible="False"
+           Text="Por: Diego Lima"/>
+    </Grid>
+</Window>

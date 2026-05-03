@@ -1,0 +1,46 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<ResourceDictionary.ThemeDictionaries>
+
+		<ResourceDictionary x:Key="Light">
+			<SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#FFF5F7FA" />
+			<SolidColorBrush x:Key="ApplicationSurfaceBrush" Color="#FFFFFFFF" />
+			<SolidColorBrush x:Key="ApplicationTileBrush" Color="#FFEEF2F6" />
+			<SolidColorBrush x:Key="ApplicationBorderBrush" Color="#FFD7DEE8" />
+			<SolidColorBrush x:Key="ApplicationTextBrush" Color="#FF1A1F2B" />
+			<SolidColorBrush x:Key="ApplicationSubTextBrush" Color="#FF5E697B" />
+			<SolidColorBrush x:Key="ApplicationAccentBrush" Color="#FFC81D25" />
+			<SolidColorBrush x:Key="ApplicationProgressTextBrush" Color="#FFC81D25" />
+			<SolidColorBrush x:Key="ApplicationAccentForegroundBrush" Color="#FFFFFFFF" />
+			<BitmapImage x:Key="LogoImageSource" UriSource="ms-appx:///Assets/logo-light.png" />
+		</ResourceDictionary>
+
+		<ResourceDictionary x:Key="Dark">
+			<SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#FF0F1115" />
+			<SolidColorBrush x:Key="ApplicationSurfaceBrush" Color="#FF171B22" />
+			<SolidColorBrush x:Key="ApplicationTileBrush" Color="#FF1E2430" />
+			<SolidColorBrush x:Key="ApplicationBorderBrush" Color="#FF2A313C" />
+			<SolidColorBrush x:Key="ApplicationTextBrush" Color="#FFF2F4F8" />
+			<SolidColorBrush x:Key="ApplicationSubTextBrush" Color="#FFAAB2C0" />
+			<SolidColorBrush x:Key="ApplicationAccentBrush" Color="#FFC81D25" />
+			<SolidColorBrush x:Key="ApplicationProgressTextBrush" Color="#FFFFFFFF" />
+			<SolidColorBrush x:Key="ApplicationAccentForegroundBrush" Color="#FFFFFFFF" />
+			<BitmapImage x:Key="LogoImageSource" UriSource="ms-appx:///Assets/logo-dark.png" />
+		</ResourceDictionary>
+
+		<ResourceDictionary x:Key="Default">
+			<SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#FFF5F7FA" />
+			<SolidColorBrush x:Key="ApplicationSurfaceBrush" Color="#FFFFFFFF" />
+			<SolidColorBrush x:Key="ApplicationTileBrush" Color="#FFEEF2F6" />
+			<SolidColorBrush x:Key="ApplicationBorderBrush" Color="#FFD7DEE8" />
+			<SolidColorBrush x:Key="ApplicationTextBrush" Color="#FF1A1F2B" />
+			<SolidColorBrush x:Key="ApplicationSubTextBrush" Color="#FF5E697B" />
+			<SolidColorBrush x:Key="ApplicationAccentBrush" Color="#FFC81D25" />
+			<SolidColorBrush x:Key="ApplicationProgressTextBrush" Color="#FFC81D25" />
+			<SolidColorBrush x:Key="ApplicationAccentForegroundBrush" Color="#FFFFFFFF" />
+			<BitmapImage x:Key="LogoImageSource" UriSource="ms-appx:///Assets/logo-light.png" />
+		</ResourceDictionary>
+
+	</ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

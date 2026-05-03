@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="DevSAK.Views.MySqlBackupRestorePage"
+    xmlns:community="using:CommunityToolkit.WinUI.Controls"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:DevSAK.Converters"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationBackgroundBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style x:Key="SectionCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource ApplicationTileBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource ApplicationBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="24" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ── Header bar ── -->
+        <Border Grid.Row="0" Padding="20,12" BorderBrush="{ThemeResource ApplicationBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Button x:Name="BackButton"
+                        Click="BackButton_Click"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="8"
+                        HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72B;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                        <TextBlock Text="Voltar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                    <FontIcon Glyph="&#xe8cb;" Foreground="{ThemeResource ApplicationAccentBrush}" FontFamily="Segoe Fluent Icons" FontSize="20" />
+                    <TextBlock Text="MySQL Backup / Restore" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── Main Content ── -->
+        <ScrollViewer Grid.Row="1" Padding="24">
+            <StackPanel HorizontalAlignment="Center" MaxWidth="900" Spacing="24">
+
+                <community:Segmented x:Name="ModePicker"
+                                     HorizontalAlignment="Stretch"
+                                     SelectionChanged="ModePicker_SelectionChanged">
+                    <community:SegmentedItem Content="Backup" IsSelected="True" />
+                    <community:SegmentedItem Content="Restaurar" />
+                </community:Segmented>
+
+                <!-- ════════════════════════════════════════
+                     TAB 1 — BACKUP
+                     ════════════════════════════════════════ -->
+                <StackPanel x:Name="BackupSection" Spacing="24" Visibility="Visible">
+
+                        <!-- Connection card (Backup) -->
+                        <Border x:Name="BackupConnectionCard" Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="20">
+                                <Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <FontIcon Glyph="&#xE774;" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}"/>
+                                        <TextBlock Text="Configuração de Conexão" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                        <Button Content="Novo" Click="AddConnectionButton_Click" IsEnabled="{Binding IsIdle}" Style="{StaticResource AccentButtonStyle}" />
+                                        <Button Content="Editar" Click="EditConnectionButton_Click" IsEnabled="{Binding CanEditSelectedConnection}" />
+                                        <Button Content="Remover" Click="RemoveConnectionButton_Click" IsEnabled="{Binding CanDeleteSelectedConnection}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnSpacing="16" RowSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Spacing="8">
+                                    <TextBlock Text="Servidor" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <ComboBox x:Name="BackupConnectionComboBox"
+                                                  HorizontalAlignment="Stretch"
+                                                  ItemsSource="{Binding Connections}"
+                                                  SelectedItem="{Binding SelectedConnection, Mode=TwoWay}"
+                                                  DisplayMemberPath="FriendlyName"
+                                                  SelectionChanged="ConnectionComboBox_SelectionChanged"
+                                                  PlaceholderText="SELECIONE" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Text="Banco de Dados" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <ComboBox x:Name="DatabaseComboBox"
+                                                      ItemsSource="{Binding Databases}"
+                                                      HorizontalAlignment="Stretch"
+                                                      SelectedItem="{Binding SelectedDatabase, Mode=TwoWay}"
+                                                      DropDownOpened="DatabaseComboBox_DropDownOpened"
+                                                      PlaceholderText="Selecione o banco" />
+
+                                            <Button Grid.Column="1"
+                                                    Click="RefreshBackupDatabasesButton_Click"
+                                                    IsEnabled="{Binding CanRefreshDatabases}"
+                                                    ToolTipService.ToolTip="Atualizar lista de bancos"
+                                                    Width="36" Height="32" Padding="0">
+                                                <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <Button Grid.Row="1" Grid.ColumnSpan="2"
+                                            HorizontalAlignment="Stretch"
+                                            Click="TestConnectionButton_Click"
+                                            IsEnabled="{Binding CanTestSelectedConnection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon Glyph="{Binding ConnectionStatusGlyph}" Foreground="{Binding ConnectionStatusBrush}" FontSize="14"/>
+                                            <TextBlock Text="{Binding ConnectionStatusText}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Backup action card -->
+                        <Border x:Name="BackupActionCard" Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="20">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="&#xE896;" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}"/>
+                                    <TextBlock Text="Backup" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel x:Name="BackupInputsPanel" Spacing="20">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Pasta de destino:" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding OutputFolder, Mode=TwoWay}" PlaceholderText="Selecione a pasta onde o backup será salvo..." />
+                                            <Button Grid.Column="1" Click="BrowseDestinationFileButton_Click">
+                                                <FontIcon Glyph="&#xED25;" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Nome do arquivo:" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBox Text="{Binding OutputFileNameBase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     PlaceholderText="Ex.: america" />
+
+                                            <Border Grid.Column="1"
+                                                    Padding="12,0"
+                                                    MinWidth="160"
+                                                    Height="36"
+                                                    CornerRadius="8"
+                                                    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                                    BorderBrush="{ThemeResource ApplicationBorderBrush}"
+                                                    BorderThickness="1">
+                                                <TextBlock Text="{Binding TimestampSuffixPreview}"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Right"
+                                                           Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                                           FontSize="12" />
+                                            </Border>
+                                        </Grid>
+
+                                        <CheckBox Content="Adicionar timestamp ao nome do arquivo"
+                                                  IsChecked="{Binding AppendTimestampToFileName, Mode=TwoWay}" />
+
+                                        <TextBlock Text="{Binding ComputedOutputPath}"
+                                                   TextWrapping="WrapWholeWords"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                        <Grid Margin="0,8,0,0" ColumnSpacing="10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ProgressBar Grid.Column="0"
+                                                         Value="{Binding ProgressValue}"
+                                                         IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                                         Height="4" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding ProgressText}"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding ProgressTextBrush}"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Cancelar" Click="CancelButton_Click" IsEnabled="{Binding IsBusy}" VerticalAlignment="Bottom"/>
+                                        <Button Content="Iniciar Backup"
+                                                Click="BackupStartButton_Click"
+                                                IsEnabled="{Binding IsIdle}"
+                                                Background="{ThemeResource ApplicationAccentBrush}"
+                                                Foreground="White"
+                                                Padding="32,12"
+                                                FontWeight="Bold"
+                                                CornerRadius="8" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Output console (Backup tab) -->
+                        <Border Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="12">
+                                <Grid>
+                                    <TextBlock Text="Console de Saída" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <ToggleButton x:Name="AutoScrollToggleButton"
+                                                      Content="Auto-rolagem"
+                                                      IsChecked="True"
+                                                      Checked="AutoScrollToggleButton_Checked"
+                                                      Unchecked="AutoScrollToggleButton_Unchecked" />
+                                        <Button Content="Copiar saída"
+                                                Click="CopyOutputButton_Click" />
+                                        <CheckBox Content="Limpar ao iniciar"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding ClearLogEachOperation, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBox x:Name="OutputConsoleTextBox"
+                                         Text="{Binding OutputLog}"
+                                         IsReadOnly="True"
+                                         AcceptsReturn="True"
+                                         TextWrapping="NoWrap"
+                                         Height="320"
+                                         FontFamily="Cascadia Mono, Consolas"
+                                         FontSize="12"
+                                         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                         BorderThickness="1"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         TextChanged="OutputConsoleTextBox_TextChanged" />
+                            </StackPanel>
+                        </Border>
+
+                </StackPanel>
+
+                <!-- ════════════════════════════════════════
+                     TAB 2 — RESTAURAR
+                     ════════════════════════════════════════ -->
+                <StackPanel x:Name="RestoreSection" Spacing="24" Visibility="Collapsed">
+
+                        <!-- Connection card (Restore) -->
+                        <Border x:Name="RestoreConnectionCard" Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="20">
+                                <Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <FontIcon Glyph="&#xE774;" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}"/>
+                                        <TextBlock Text="Configuração de Conexão" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                        <Button Content="Novo" Click="AddConnectionButton_Click" IsEnabled="{Binding IsIdle}" Style="{StaticResource AccentButtonStyle}" />
+                                        <Button Content="Editar" Click="EditConnectionButton_Click" IsEnabled="{Binding CanEditSelectedConnection}" />
+                                        <Button Content="Remover" Click="RemoveConnectionButton_Click" IsEnabled="{Binding CanDeleteSelectedConnection}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnSpacing="16" RowSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Server picker (shared state) -->
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Servidor" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <ComboBox x:Name="RestoreConnectionComboBox"
+                                                  HorizontalAlignment="Stretch"
+                                                  ItemsSource="{Binding Connections}"
+                                                  SelectedItem="{Binding SelectedConnection, Mode=TwoWay}"
+                                                  DisplayMemberPath="FriendlyName"
+                                                  SelectionChanged="ConnectionComboBox_SelectionChanged"
+                                                  PlaceholderText="SELECIONE" />
+                                    </StackPanel>
+
+                                    <!-- Editable database picker -->
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Text="Banco de Dados de Destino" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <ComboBox x:Name="RestoreDatabaseComboBox"
+                                                      HorizontalAlignment="Stretch"
+                                                      IsEditable="True"
+                                                      ItemsSource="{Binding Databases}"
+                                                      SelectedItem="{Binding SelectedDatabase, Mode=TwoWay}"
+                                                      Text="{Binding RestoreDatabaseName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      PlaceholderText="Selecione ou digite o banco"
+                                                      GotFocus="RestoreDatabaseComboBox_GotFocus"
+                                                      DropDownOpened="RestoreDatabaseComboBox_DropDownOpened"
+                                                      SelectionChanged="RestoreDatabaseComboBox_SelectionChanged"
+                                                      TextSubmitted="RestoreDatabaseComboBox_TextSubmitted" />
+
+                                            <Button Grid.Column="1"
+                                                    Click="RefreshRestoreDatabasesButton_Click"
+                                                    IsEnabled="{Binding CanRefreshDatabases}"
+                                                    ToolTipService.ToolTip="Atualizar lista de bancos"
+                                                    Width="36" Height="32" Padding="0">
+                                                <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                                            </Button>
+
+                                            <!-- "+" create database button — visible only when the typed name is new -->
+                                            <Button x:Name="CreateDatabaseButton"
+                                                    Grid.Column="2"
+                                                    Click="CreateDatabaseButton_Click"
+                                                    IsEnabled="{Binding CanCreateDatabase}"
+                                                    Visibility="{Binding ShowCreateDatabaseButton, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                    ToolTipService.ToolTip="Criar banco de dados"
+                                                    Width="36" Height="36" Padding="0"
+                                                    Style="{StaticResource AccentButtonStyle}">
+                                                <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                            </Button>
+                                        </Grid>
+
+                                        <!-- Hint shown when the DB name is new -->
+                                        <TextBlock x:Name="NewDatabaseHint"
+                                                   Text="Este banco não existe. Pressione Enter ou clique em '+' para criá-lo."
+                                                   FontSize="11"
+                                                   FontStyle="Italic"
+                                                   Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                                   Visibility="{Binding ShowCreateDatabaseButton, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <Button Grid.Row="1" Grid.ColumnSpan="2"
+                                            HorizontalAlignment="Stretch"
+                                            Click="TestConnectionButton_Click"
+                                            IsEnabled="{Binding CanTestSelectedConnection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon Glyph="{Binding ConnectionStatusGlyph}" Foreground="{Binding ConnectionStatusBrush}" FontSize="14"/>
+                                            <TextBlock Text="{Binding ConnectionStatusText}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Restore action card -->
+                        <Border x:Name="RestoreActionCard" Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="20">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="&#xE777;" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}"/>
+                                    <TextBlock Text="Restauração" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel x:Name="RestoreInputsPanel" Spacing="20">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Selecionar arquivo SQL:" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding SourceSqlFile, Mode=TwoWay}" PlaceholderText="Caminho do backup (.sql)..." />
+                                            <Button Grid.Column="1" Click="BrowseSourceFileButton_Click">
+                                                <FontIcon Glyph="&#xED25;" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <CheckBox x:Name="ForeignKeyChecksOption"
+                                              Content="Ignorar verificação de chaves estrangeiras (Foreign Keys)"
+                                              IsChecked="{Binding DisableForeignKeyChecks, Mode=TwoWay}" />
+
+                                    <CheckBox Content="Excluir e recriar a base de dados antes de restaurar"
+                                              IsChecked="{Binding RecreateDatabaseBeforeRestore, Mode=TwoWay}" />
+                                </StackPanel>
+
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                        <Grid Margin="0,8,0,0" ColumnSpacing="10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ProgressBar Grid.Column="0"
+                                                         Value="{Binding ProgressValue}"
+                                                         IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                                         Height="4" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding ProgressText}"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding ProgressTextBrush}"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Cancelar" Click="RestoreCancelButton_Click" IsEnabled="{Binding IsBusy}" VerticalAlignment="Bottom"/>
+                                        <Button Content="Iniciar Restauração"
+                                                Click="RestoreStartButton_Click"
+                                                IsEnabled="{Binding IsIdle}"
+                                                Background="{ThemeResource ApplicationAccentBrush}"
+                                                Foreground="White"
+                                                Padding="32,12"
+                                                FontWeight="Bold"
+                                                CornerRadius="8" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Output console (Restore tab) — mirrors the same log -->
+                        <Border Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="12">
+                                <Grid>
+                                    <TextBlock Text="Console de Saída" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <ToggleButton x:Name="RestoreAutoScrollToggleButton"
+                                                      Content="Auto-rolagem"
+                                                      IsChecked="True"
+                                                      Checked="RestoreAutoScrollToggleButton_Checked"
+                                                      Unchecked="RestoreAutoScrollToggleButton_Unchecked" />
+                                        <Button Content="Copiar saída"
+                                                Click="CopyOutputButton_Click" />
+                                        <CheckBox Content="Limpar ao iniciar"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding ClearLogEachOperation, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBox x:Name="RestoreOutputConsoleTextBox"
+                                         Text="{Binding OutputLog}"
+                                         IsReadOnly="True"
+                                         AcceptsReturn="True"
+                                         TextWrapping="NoWrap"
+                                         Height="320"
+                                         FontFamily="Cascadia Mono, Consolas"
+                                         FontSize="12"
+                                         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                         BorderThickness="1"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         TextChanged="RestoreOutputConsoleTextBox_TextChanged" />
+                            </StackPanel>
+                        </Border>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
