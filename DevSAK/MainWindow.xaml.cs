@@ -114,6 +114,9 @@ namespace DevSAK
                         case "MySqlBackupRestore":
                             NavigateToTool(typeof(MySqlBackupRestorePage));
                             break;
+                        case "SmtpTest":
+                            NavigateToTool(typeof(SmtpTestPage));
+                            break;
                     }
                 }
             }

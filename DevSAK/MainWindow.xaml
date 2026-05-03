@@ -214,6 +214,42 @@
                                 </StackPanel>
                             </Grid>
                         </Button>
+
+                        <Button Template="{StaticResource TileButtonTemplate}"
+                                Click="TileButton_Click"
+                                Tag="SmtpTest"
+                                Width="460"
+                                Margin="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Width="64"
+                                        Height="64"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource ApplicationAccentBrush}"
+                                        VerticalAlignment="Top">
+                                    <FontIcon Glyph="&#xE715;"
+                                              FontFamily="Segoe Fluent Icons"
+                                              FontSize="28"
+                                              Foreground="White" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Testar SMTP"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource ApplicationTextBrush}" />
+                                    <TextBlock Text="Testar servidor SMTP. Utilize o console de saída para obter informações sobre o teste."
+                                               FontSize="13"
+                                               Foreground="{ThemeResource ApplicationSubTextBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
                     </GridView>
                 </StackPanel>
             </StackPanel>

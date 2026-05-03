@@ -193,7 +193,7 @@ namespace DevSAK.Services
                 byte[] pfxBytes = File.ReadAllBytes(pfxPath);
 
                 // Load the PKCS#12 store using BouncyCastle
-                Pkcs12Store store = new Pkcs12Store();
+                Pkcs12Store store = new Pkcs12StoreBuilder().Build();
                 using (var stream = new MemoryStream(pfxBytes))
                 {
                     store.Load(stream, password.ToCharArray());
@@ -240,7 +240,7 @@ namespace DevSAK.Services
             try
             {
                 byte[] pfxBytes = File.ReadAllBytes(pfxPath);
-                var store = new Pkcs12Store();
+                var store = new Pkcs12StoreBuilder().Build();
                 using (var stream = new MemoryStream(pfxBytes))
                 {
                     store.Load(stream, (password ?? "").ToCharArray());
