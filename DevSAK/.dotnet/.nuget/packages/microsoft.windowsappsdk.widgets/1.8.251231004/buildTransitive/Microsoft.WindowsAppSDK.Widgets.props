@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ProjectCapability Id="VersionGeneral" Include="Microsoft.WindowsAppSDK.Widgets" />
+    <ProjectCapability Id="VersionSpecific" Include="Microsoft.WindowsAppSDK.Widgets.1.8.251231004" />
+  </ItemGroup>
+  <ItemGroup>
+    <WindowsAppSdkComponentPackages Include="$(MSBuildThisFileDirectory)..\" />
+  </ItemGroup>
+</Project>

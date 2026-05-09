@@ -20,6 +20,8 @@ namespace DevSAK.Models
 
         public bool ClearLogEachOperation { get; set; }
 
+        public bool CompressBackupToZip { get; set; }
+
         public List<string> RecentConnectionIds { get; set; } = new();
 
         public void RegisterRecentConnection(string? connectionId)

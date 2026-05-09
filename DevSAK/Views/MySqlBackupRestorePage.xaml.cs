@@ -330,12 +330,12 @@ namespace DevSAK.Views
                 return;
             }
 
-            if (_viewModel.IsBackupMode && System.IO.File.Exists(_viewModel.DestinationSqlFile))
+            if (_viewModel.IsBackupMode && System.IO.File.Exists(_viewModel.ComputedOutputPath))
             {
                 var overwriteDialog = new ContentDialog
                 {
                     Title = "Arquivo existente",
-                    Content = "O arquivo de destino já existe. Deseja substituí-lo?",
+                    Content = "O arquivo final de destino já existe. Deseja substituí-lo?",
                     PrimaryButtonText = "Sobrescrever o arquivo",
                     CloseButtonText = "Cancelar",
                     DefaultButton = ContentDialogButton.Close,

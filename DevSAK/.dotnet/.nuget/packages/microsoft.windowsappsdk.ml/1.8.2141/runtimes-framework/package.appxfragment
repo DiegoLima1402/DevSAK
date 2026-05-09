@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Fragment xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+  <Extensions xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.AI.MachineLearning.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.ExecutionProviderCatalog" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.ExecutionProvider" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.ExecutionProviderReadyResult" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.CatalogModelInfo" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.ModelCatalog" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.CatalogModelInstance" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.ModelCatalogSource" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.MachineLearning.CatalogModelInstanceResult" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+  </Extensions>
+</Fragment>

@@ -1,0 +1,8 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ProjectCapability Id="VersionGeneral" Include="Microsoft.WindowsAppSDK.ML" />
+    <ProjectCapability Id="VersionSpecific" Include="Microsoft.WindowsAppSDK.ML.1.8.2141" />
+    <WindowsAppSdkComponentPackages Include="$(MSBuildThisFileDirectory)..\" />
+  </ItemGroup>
+</Project>

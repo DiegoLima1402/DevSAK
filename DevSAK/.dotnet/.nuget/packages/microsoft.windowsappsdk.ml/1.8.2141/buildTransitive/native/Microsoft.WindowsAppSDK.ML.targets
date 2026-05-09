@@ -1,0 +1,90 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="uap10.0">
+    <Reference Include="$(MSBuildThisFileDirectory)..\..\metadata\Microsoft.Windows.AI.MachineLearning.winmd">
+      <Implementation>Microsoft.Windows.AI.MachineLearning.dll</Implementation>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <!-- Determine if auto-initialization is enabled -->
+  <PropertyGroup Condition="'$(DisableWindowsAppSDKAutoInitialize)' != 'true' and '$(DisableWindowsAppSDKMLAutoInitialize)' != 'true' and '$(WindowsMLNativeLinkOnnxRuntime)' != 'true'">
+    <WindowsAppSDKMLAutoInitialize>true</WindowsAppSDKMLAutoInitialize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WindowsAppSDKMLPassthroughOnnxRuntime)' == 'true'">
+    <WindowsAppSDKMLAutoInitialize>true</WindowsAppSDKMLAutoInitialize>
+  </PropertyGroup>
+
+  <!-- Determine deployment mode (mutually exclusive) -->
+  <PropertyGroup Condition="'$(WindowsAppSDKMLAutoInitialize)' == 'true'">
+    <WindowsAppSDKMLDeploymentMode Condition="'$(WindowsAppSDKMLPassthroughOnnxRuntime)' == 'true'">Passthrough</WindowsAppSDKMLDeploymentMode>
+    <WindowsAppSDKMLDeploymentMode Condition="'$(WindowsAppSDKMLPassthroughOnnxRuntime)' != 'true' and '$(WindowsAppSDKSelfContained)' == 'true'">SelfContained</WindowsAppSDKMLDeploymentMode>
+    <WindowsAppSDKMLDeploymentMode Condition="'$(WindowsAppSDKMLPassthroughOnnxRuntime)' != 'true' and '$(WindowsAppSDKSelfContained)' != 'true'">Framework</WindowsAppSDKMLDeploymentMode>
+  </PropertyGroup>
+
+  <!-- Validate deployment mode configuration -->
+  <PropertyGroup Condition="'$(WindowsAppSDKMLAutoInitialize)' == 'true'">
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);ValidateWindowsMLDeploymentMode</BeforeClCompileTargets>
+  </PropertyGroup>
+
+  <Target Name="ValidateWindowsMLDeploymentMode">
+    <Error Text="WindowsML deployment mode could not be determined. Ensure that either WindowsAppSDKSelfContained or WindowsAppSDKMLPassthroughOnnxRuntime is set to 'true', but not both."
+           Condition="'$(WindowsAppSDKMLDeploymentMode)' == ''" />
+
+    <!-- Validate mutually exclusive properties -->
+    <Error Text="WindowsAppSDKSelfContained and WindowsAppSDKMLPassthroughOnnxRuntime cannot both be true."
+           Condition="'$(WindowsAppSDKSelfContained)' == 'true' and '$(WindowsAppSDKMLPassthroughOnnxRuntime)' == 'true'" />
+  </Target>
+
+  <!-- Include auto-initializer based on deployment mode -->
+  <PropertyGroup Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'Framework'">
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);WindowsMLAutoInitializer</BeforeClCompileTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'SelfContained'">
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);WindowsMLAutoInitializerSelfContained</BeforeClCompileTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'Passthrough'">
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);WindowsMLAutoInitializerPassthrough</BeforeClCompileTargets>
+  </PropertyGroup>
+
+  <!-- Preprocessor definition when auto-initialization is disabled -->
+  <ItemDefinitionGroup Condition="'$(WindowsAppSDKMLAutoInitialize)' != 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>MICROSOFT_WINDOWSAPPSDK_ML_DISABLE_AUTOINITIALIZE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- Optional linking to ONNX Runtime import library when auto-initialization is disabled -->
+  <ItemDefinitionGroup Condition="'$(WindowsAppSDKMLAutoInitialize)' != 'true' and '$(WindowsMLNativeLinkOnnxRuntime)' == 'true'">
+    <Link>
+      <AdditionalDependencies>$(MSBuildThisFileDirectory)..\..\lib\native\$(Platform)\onnxruntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- Framework-dependent mode: Use the original auto-initializer -->
+  <Target Name="WindowsMLAutoInitializer" Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'Framework'">
+    <ItemGroup>
+      <ClCompile Include="$(MSBuildThisFileDirectory)..\..\include\WindowsMLAutoInitializer.cpp">
+        <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+
+  <!-- Self-contained mode: Use the self-contained auto-initializer -->
+  <Target Name="WindowsMLAutoInitializerSelfContained" Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'SelfContained'">
+    <ItemGroup>
+      <ClCompile Include="$(MSBuildThisFileDirectory)..\..\include\WindowsMLAutoInitializer.SelfContained.cpp">
+        <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+
+  <!-- Passthrough mode: Use the passthrough auto-initializer -->
+  <Target Name="WindowsMLAutoInitializerPassthrough" Condition="'$(WindowsAppSDKMLDeploymentMode)' == 'Passthrough'">
+    <ItemGroup>
+      <ClCompile Include="$(MSBuildThisFileDirectory)..\..\include\WindowsMLAutoInitializer.Passthrough.cpp">
+        <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+
+</Project>

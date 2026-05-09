@@ -295,7 +295,6 @@ namespace DevSAK.Views
                 case ContentDialogResult.Secondary:
                     OpenFolderAndSelectFile(zipPath);
                     break;
-                    // Close button does nothing
             }
         }
 
@@ -327,5 +326,6 @@ namespace DevSAK.Views
                 Debug.WriteLine($"Failed to open folder: {ex.Message}");
             }
         }
+
     }
 }

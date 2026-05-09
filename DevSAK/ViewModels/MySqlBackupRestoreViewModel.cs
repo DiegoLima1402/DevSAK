@@ -23,8 +23,12 @@ namespace DevSAK.ViewModels
         private readonly MySqlBackupRestoreService _backupRestoreService;
         private readonly string _settingsFilePath;
         private DispatcherQueue? _dispatcherQueue;
+        private DispatcherQueueTimer? _logFlushTimer;
 
         private readonly StringBuilder _logBuilder = new();
+        private readonly object _logSync = new();
+        private bool _isLogDirty;
+        private bool _isLogTrimmed;
         private MySqlBackupRestoreSettings _settings = new();
         private CancellationTokenSource? _operationCts;
         private MySqlConnectionProfile? _selectedConnection;
@@ -33,6 +37,7 @@ namespace DevSAK.ViewModels
         private string _outputFolder = string.Empty;
         private string _outputFileNameBase = string.Empty;
         private bool _appendTimestampToFileName = true;
+        private bool _compressBackupToZip;
         private bool _disableForeignKeyChecks;
         private bool _recreateDatabaseBeforeRestore;
         private bool _isBusy;
@@ -50,6 +55,7 @@ namespace DevSAK.ViewModels
         private bool _clearLogEachOperation;
         private bool _isSelectedConnectionValidated;
         private ElementTheme _currentTheme = ElementTheme.Default;
+        private const int MaxVisibleLogCharacters = 750_000;
 
         public MySqlBackupRestoreViewModel()
         {
@@ -75,6 +81,11 @@ namespace DevSAK.ViewModels
         public void SetDispatcherQueue(DispatcherQueue dispatcherQueue)
         {
             _dispatcherQueue = dispatcherQueue;
+
+            _logFlushTimer ??= dispatcherQueue.CreateTimer();
+            _logFlushTimer.Interval = TimeSpan.FromMilliseconds(75);
+            _logFlushTimer.Tick += (_, _) => FlushPendingLogToUi();
+            _logFlushTimer.Start();
         }
 
         public void SetCurrentTheme(ElementTheme theme)
@@ -236,6 +247,25 @@ namespace DevSAK.ViewModels
             }
         }
 
+        public bool CompressBackupToZip
+        {
+            get => _compressBackupToZip;
+            set
+            {
+                if (_compressBackupToZip == value)
+                {
+                    return;
+                }
+
+                _compressBackupToZip = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DestinationSqlFile));
+                OnPropertyChanged(nameof(ComputedOutputFileName));
+                OnPropertyChanged(nameof(ComputedOutputPath));
+                OnPropertyChanged(nameof(TimestampSuffixPreview));
+            }
+        }
+
         public string DestinationSqlFile
         {
             get => ComputeOutputPath();
@@ -247,8 +277,8 @@ namespace DevSAK.ViewModels
         public string ComputedOutputPath => ComputeOutputPath();
 
         public string TimestampSuffixPreview => AppendTimestampToFileName
-            ? $"_{GetTimestampToken()}.sql"
-            : ".sql";
+            ? $"_{GetTimestampToken()}{GetOutputExtension()}"
+            : GetOutputExtension();
 
         public bool DisableForeignKeyChecks
         {
@@ -507,6 +537,7 @@ namespace DevSAK.ViewModels
             _settings = await LoadSettingsAsync();
             Mode = _settings.LastMode;
             SourceSqlFile = _settings.LastSourceSqlFile ?? string.Empty;
+            CompressBackupToZip = _settings.CompressBackupToZip;
             ApplyDestinationPath(_settings.LastDestinationSqlFile);
             DisableForeignKeyChecks = _settings.DisableForeignKeyChecks;
             RecreateDatabaseBeforeRestore = _settings.RecreateDatabaseBeforeRestore;
@@ -698,10 +729,7 @@ namespace DevSAK.ViewModels
 
             _operationCts = new CancellationTokenSource();
 
-            // Progress<T> is created here, on the UI thread, so it captures the UI
-            // SynchronizationContext. All Report() callbacks will marshal to the UI thread
-            // automatically — even though the operation runs on the thread pool below.
-            var progress = new Progress<MySqlOperationUpdate>(HandleOperationUpdate);
+            var progress = new MySqlOperationProgress(HandleOperationUpdate);
 
             try
             {
@@ -722,9 +750,13 @@ namespace DevSAK.ViewModels
                 var database = targetDatabase;
                 var sourceFile = SourceSqlFile;
                 var destFile = DestinationSqlFile;
+                var backupSqlFile = IsBackupMode && CompressBackupToZip
+                    ? System.IO.Path.ChangeExtension(destFile, ".sql")
+                    : destFile;
                 var settings = _settings;
                 var disableFk = DisableForeignKeyChecks;
                 var recreateDatabaseBeforeRestore = RecreateDatabaseBeforeRestore;
+                var compressBackupToZip = CompressBackupToZip;
                 var token = _operationCts.Token;
 
                 if (IsBackupMode)
@@ -732,8 +764,9 @@ namespace DevSAK.ViewModels
                     await _backupRestoreService.BackupAsync(
                         connection,
                         database,
-                        destFile,
+                        backupSqlFile,
                         settings,
+                        compressBackupToZip ? destFile : null,
                         progress,
                         token).ConfigureAwait(true);
                 }
@@ -754,18 +787,22 @@ namespace DevSAK.ViewModels
                 StatusText = "Concluído com sucesso";
                 SetProgressState(100, false, "Concluído", true);
                 AppendLog(IsBackupMode ? "Backup concluído com sucesso." : "Restauração concluída com sucesso.");
+                FlushPendingLogToUi();
             }
             catch (OperationCanceledException)
             {
                 StatusText = "Operação cancelada";
                 SetProgressState(0, false, "Cancelado", false);
                 AppendLog("Operação cancelada pelo usuário.");
+                FlushPendingLogToUi();
             }
             catch (Exception ex)
             {
                 StatusText = "Falha na operação";
                 SetProgressState(0, false, "Falha", false);
                 AppendLog($"Falha: {ex.Message}");
+                AppendLog($"Detalhes técnicos: {ex}");
+                FlushPendingLogToUi();
                 throw;
             }
             finally
@@ -838,6 +875,7 @@ namespace DevSAK.ViewModels
             StatusText = "Operação cancelada";
             SetProgressState(0, false, "Cancelado", false);
             AppendLog("Operação cancelada pelo usuário.");
+            FlushPendingLogToUi();
         }
 
         public string BuildConfirmationMessage()
@@ -856,28 +894,84 @@ namespace DevSAK.ViewModels
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
 
-            void DoAppend()
+            lock (_logSync)
             {
                 _logBuilder.Append('[').Append(timestamp).Append("] ").AppendLine(message);
-                OutputLog = _logBuilder.ToString();
+                TrimLogIfNeeded();
+                _isLogDirty = true;
             }
 
-            // If we are already on the UI thread (or no dispatcher is wired up yet), update directly.
-            // Otherwise post to the UI thread so PropertyChanged doesn't fire from a background thread.
+            if (_dispatcherQueue is null)
+            {
+                FlushPendingLogToUi();
+            }
+        }
+
+        private void FlushPendingLogToUi()
+        {
+            if (_dispatcherQueue is not null && !_dispatcherQueue.HasThreadAccess)
+            {
+                _dispatcherQueue.TryEnqueue(FlushPendingLogToUi);
+                return;
+            }
+
+            string snapshot;
+            lock (_logSync)
+            {
+                if (!_isLogDirty)
+                {
+                    return;
+                }
+
+                snapshot = _logBuilder.ToString();
+                _isLogDirty = false;
+            }
+
+            OutputLog = snapshot;
+        }
+
+        private void TrimLogIfNeeded()
+        {
+            if (_logBuilder.Length <= MaxVisibleLogCharacters)
+            {
+                return;
+            }
+
+            const string trimNotice = "[log truncado para manter a interface responsiva]\r\n";
+            var targetLength = MaxVisibleLogCharacters - trimNotice.Length;
+            var removeCount = Math.Max(0, _logBuilder.Length - targetLength);
+
+            _logBuilder.Remove(0, Math.Min(removeCount, _logBuilder.Length));
+
+            if (!_isLogTrimmed)
+            {
+                _logBuilder.Insert(0, trimNotice);
+                _isLogTrimmed = true;
+            }
+        }
+
+        private void RunOnUiThread(Action action)
+        {
             if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess)
             {
-                DoAppend();
+                action();
             }
             else
             {
-                _dispatcherQueue.TryEnqueue(DoAppend);
+                _dispatcherQueue.TryEnqueue(() => action());
             }
         }
 
         public void ClearLog()
         {
-            _logBuilder.Clear();
-            OutputLog = string.Empty;
+            lock (_logSync)
+            {
+                _logBuilder.Clear();
+                _isLogDirty = false;
+                _isLogTrimmed = false;
+            }
+
+            RunOnUiThread(() => OutputLog = string.Empty);
         }
 
         private void HandleOperationUpdate(MySqlOperationUpdate update)
@@ -887,26 +981,32 @@ namespace DevSAK.ViewModels
                 AppendLog(update.LogLine);
             }
 
-            if (!string.IsNullOrWhiteSpace(update.Status))
+            if (!string.IsNullOrWhiteSpace(update.Status) || !double.IsNaN(update.Percentage) || update.IsIndeterminate)
             {
-                StatusText = update.Status;
-            }
+                RunOnUiThread(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(update.Status))
+                    {
+                        StatusText = update.Status;
+                    }
 
-            if (!double.IsNaN(update.Percentage))
-            {
-                ProgressValue = Math.Max(0, Math.Min(100, update.Percentage));
-                ProgressText = $"{Math.Round(ProgressValue)}%";
-                ProgressTextBrush = CreateInProgressBrush();
-            }
-            else if (update.IsIndeterminate)
-            {
-                ProgressText = "Em andamento";
-                ProgressTextBrush = CreateInProgressBrush();
-            }
+                    if (!double.IsNaN(update.Percentage))
+                    {
+                        ProgressValue = Math.Max(0, Math.Min(100, update.Percentage));
+                        ProgressText = $"{Math.Round(ProgressValue)}%";
+                        ProgressTextBrush = CreateInProgressBrush();
+                    }
+                    else if (update.IsIndeterminate)
+                    {
+                        ProgressText = "Em andamento";
+                        ProgressTextBrush = CreateInProgressBrush();
+                    }
 
-            if (update.Status is not null || !double.IsNaN(update.Percentage))
-            {
-                IsProgressIndeterminate = update.IsIndeterminate;
+                    if (update.Status is not null || !double.IsNaN(update.Percentage))
+                    {
+                        IsProgressIndeterminate = update.IsIndeterminate;
+                    }
+                });
             }
         }
 
@@ -984,6 +1084,7 @@ namespace DevSAK.ViewModels
             _settings.LastMode = Mode;
             _settings.LastSourceSqlFile = NormalizeOptionalPath(SourceSqlFile);
             _settings.LastDestinationSqlFile = NormalizeOptionalPath(ComputedOutputPath);
+            _settings.CompressBackupToZip = CompressBackupToZip;
             _settings.DisableForeignKeyChecks = DisableForeignKeyChecks;
             _settings.RecreateDatabaseBeforeRestore = RecreateDatabaseBeforeRestore;
             _settings.ClearLogEachOperation = ClearLogEachOperation;
@@ -1065,9 +1166,10 @@ namespace DevSAK.ViewModels
         private static string NormalizeOutputFileNameBase(string? value)
         {
             var normalized = value?.Trim() ?? string.Empty;
-            if (normalized.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
+            if (normalized.EndsWith(".sql", StringComparison.OrdinalIgnoreCase) ||
+                normalized.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                normalized = normalized[..^4];
+                normalized = normalized[..^System.IO.Path.GetExtension(normalized).Length];
             }
 
             return normalized.Trim();
@@ -1113,8 +1215,8 @@ namespace DevSAK.ViewModels
             }
 
             return AppendTimestampToFileName
-                ? $"{OutputFileNameBase}_{GetTimestampToken()}.sql"
-                : $"{OutputFileNameBase}.sql";
+                ? $"{OutputFileNameBase}_{GetTimestampToken()}{GetOutputExtension()}"
+                : $"{OutputFileNameBase}{GetOutputExtension()}";
         }
 
         private string ComputeOutputPath()
@@ -1126,6 +1228,8 @@ namespace DevSAK.ViewModels
 
             return System.IO.Path.Combine(OutputFolder, ComputeOutputFileName());
         }
+
+        private string GetOutputExtension() => CompressBackupToZip && IsBackupMode ? ".zip" : ".sql";
 
         private static string GetTimestampToken()
         {
@@ -1157,6 +1261,21 @@ namespace DevSAK.ViewModels
         private void OnPropertyChanged(string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private sealed class MySqlOperationProgress : IProgress<MySqlOperationUpdate>
+        {
+            private readonly Action<MySqlOperationUpdate> _handler;
+
+            public MySqlOperationProgress(Action<MySqlOperationUpdate> handler)
+            {
+                _handler = handler;
+            }
+
+            public void Report(MySqlOperationUpdate value)
+            {
+                _handler(value);
+            }
         }
     }
 }

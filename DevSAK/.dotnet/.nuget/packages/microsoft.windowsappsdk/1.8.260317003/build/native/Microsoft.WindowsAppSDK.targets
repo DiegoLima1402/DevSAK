@@ -1,0 +1,73 @@
+<!--
+  Copyright (c) Microsoft Corporation. Licensed under the MIT License
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" InitialTargets="WindowsAppSDKVerifyTransitiveDependencies">
+
+    <Import Project="$(MSBuildThisFileDirectory)..\Microsoft.WindowsAppSDK.targets" />
+
+    <Target Name="WindowsAppSDKVerifyTransitiveDependencies" Condition="'$(WindowsAppSDKVerifyTransitiveDependencies)'!='false'">
+        <PropertyGroup>
+            <PackagesConfig>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), "packages.config"))</PackagesConfig>
+            <WindowsAppSDKPackageDir>$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory), "..\..\"))</WindowsAppSDKPackageDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <WindowsAppSDKNupkg Include="$(WindowsAppSDKPackageDir)*.nupkg" />
+        </ItemGroup>
+        <GetUnreferencedDependencies PackagesConfig="$(PackagesConfig)" WindowsAppSDKNupkg="@(WindowsAppSDKNupkg)" >
+            <Output ItemName="UnreferencedDependencies" TaskParameter="UnreferencedDependencies" />
+        </GetUnreferencedDependencies>
+        <Error Condition="'@(UnreferencedDependencies)'!=''" Text="No references were found for these Windows App SDK transitive dependencies, which may cause build or runtime errors:
+    @(UnreferencedDependencies->'%(Identity)',', ')
+Please update your Windows App SDK package reference to ensure all dependencies are included,
+or suppress this error by setting WindowsAppSDKVerifyTransitiveDependencies = false in your project." />
+    </Target>
+
+    <UsingTask TaskName="GetUnreferencedDependencies" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <PackagesConfig ParameterType="System.String" Required="true" />
+            <WindowsAppSDKNupkg ParameterType="System.String" Required="true" />
+            <UnreferencedDependencies ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System.IO.Compression" />
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+// If packages.config or nupkg can't be found, assume a custom configuration and skip the check
+if(!File.Exists(PackagesConfig) || !File.Exists(WindowsAppSDKNupkg))
+{
+    return true;
+}
+
+// Parse the packages.config for the list of referenced packages
+var config = System.Xml.Linq.XDocument.Load(PackagesConfig);
+var referencedPackages = (from pkg in config.Descendants("package")
+    select pkg.Attribute("id").Value);
+
+// Extract the nuspec from the nupkg
+var nupkg = ZipFile.OpenRead(WindowsAppSDKNupkg);
+var nuspecEntry = (from entry in nupkg.Entries
+    where entry.Name.EndsWith(".nuspec")
+    select entry).First();
+var nuspecFile = Path.GetTempFileName();
+nuspecEntry.ExtractToFile(nuspecFile, true);
+
+// Parse the nuspec and cross-reference with the packages.config to determine unreferenced transitive packages
+var nuspec = System.Xml.Linq.XDocument.Load(nuspecFile);
+var unreferencedPackages = (from dep in nuspec.Descendants(nuspec.Root.GetDefaultNamespace().GetName("dependency"))
+    select dep.Attribute("id").Value).Except(referencedPackages, StringComparer.OrdinalIgnoreCase).ToList();
+if (unreferencedPackages.Count > 0)
+{
+    UnreferencedDependencies = new TaskItem[unreferencedPackages.Count];
+    for (int i = 0; i < unreferencedPackages.Count; i++)
+    {
+        UnreferencedDependencies[i] = new TaskItem(unreferencedPackages[i]);
+    }
+}
+
+File.Delete(nuspecFile);
+]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+</Project>

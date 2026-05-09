@@ -193,6 +193,9 @@
                                         <CheckBox Content="Adicionar timestamp ao nome do arquivo"
                                                   IsChecked="{Binding AppendTimestampToFileName, Mode=TwoWay}" />
 
+                                        <CheckBox Content="Compactar backup em ZIP"
+                                                  IsChecked="{Binding CompressBackupToZip, Mode=TwoWay}" />
+
                                         <TextBlock Text="{Binding ComputedOutputPath}"
                                                    TextWrapping="WrapWholeWords"
                                                    FontSize="12"

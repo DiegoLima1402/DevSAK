@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CommunityToolkit.WinUI.Controls.Segmented</name>
+    </assembly>
+    <members>
+        <member name="T:CommunityToolkit.WinUI.Controls.EqualPanel">
+            <summary>
+            A panel that arranges its children in equal columns.
+            </summary>
+        </member>
+        <member name="P:CommunityToolkit.WinUI.Controls.EqualPanel.Spacing">
+            <summary>
+            Gets or sets the spacing between items.
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.WinUI.Controls.EqualPanel.SpacingProperty">
+            <summary>
+            Identifies the Spacing dependency property.
+            </summary>
+            <returns>The identifier for the <see cref="P:CommunityToolkit.WinUI.Controls.EqualPanel.Spacing"/> dependency property.</returns>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.EqualPanel.#ctor">
+            <summary>
+            Creates a new instance of the <see cref="T:CommunityToolkit.WinUI.Controls.EqualPanel"/> class.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.EqualPanel.MeasureOverride(Windows.Foundation.Size)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.EqualPanel.ArrangeOverride(Windows.Foundation.Size)">
+            <inheritdoc/>
+        </member>
+        <member name="T:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter">
+            <summary>
+            A converter that returns a margin based on the position of the item in a segmented control.
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.LeftItemMarginProperty">
+            <summary>
+            Identifies the <see cref="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.LeftItemMargin"/> property.
+            </summary>
+        </member>
+        <member name="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.LeftItemMargin">
+            <summary>
+            Gets or sets the margin of the first item
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.MiddleItemMarginProperty">
+            <summary>
+            Identifies the <see cref="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.MiddleItemMargin"/> property.
+            </summary>
+        </member>
+        <member name="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.MiddleItemMargin">
+            <summary>
+            Gets or sets the margin of any middle item
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.RightItemMarginProperty">
+            <summary>
+            Identifies the <see cref="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.RightItemMargin"/> property.
+            </summary>
+        </member>
+        <member name="P:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.RightItemMargin">
+            <summary>
+            Gets or sets the margin of the last item
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.Convert(System.Object,System.Type,System.Object,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.ConvertBack(System.Object,System.Type,System.Object,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.ClearBindings">
+            <summary>
+            Obsolete method kept for binary compatibility
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedMarginConverter.RestoreBindings">
+            <summary>
+            Obsolete method kept for binary compatibility
+            </summary>
+        </member>
+        <member name="T:CommunityToolkit.WinUI.Controls.SegmentedItem">
+            <summary>
+            Represents an item in a <see cref="T:CommunityToolkit.WinUI.Controls.Segmented"/> control.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedItem.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:CommunityToolkit.WinUI.Controls.SegmentedItem"/>.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedItem.OnApplyTemplate">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedItem.OnContentChanged(System.Object,System.Object)">
+            <summary>
+            Handles changes to the Content property.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.SegmentedItem.OnIconPropertyChanged(Microsoft.UI.Xaml.Controls.IconElement,Microsoft.UI.Xaml.Controls.IconElement)">
+            <summary>
+            Handles changes to the Icon property.
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.WinUI.Controls.SegmentedItem.IconProperty">
+            <summary>
+            The backing <see cref="T:Microsoft.UI.Xaml.DependencyProperty"/> for the <see cref="P:CommunityToolkit.WinUI.Controls.SegmentedItem.Icon"/> property.
+            </summary>
+        </member>
+        <member name="P:CommunityToolkit.WinUI.Controls.SegmentedItem.Icon">
+            <summary>
+            Gets or sets the icon.
+            </summary>
+        </member>
+        <member name="T:CommunityToolkit.WinUI.Controls.Segmented">
+            <summary>
+            A control that displays a set of items that can be selected by the user.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:CommunityToolkit.WinUI.Controls.Segmented"/>.
+            </summary>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.GetContainerForItemOverride">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.IsItemItsOwnContainerOverride(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.OnApplyTemplate">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.PrepareContainerForItemOverride(Microsoft.UI.Xaml.DependencyObject,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.OnItemsChanged(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:CommunityToolkit.WinUI.Controls.Segmented.MoveFocus(CommunityToolkit.WinUI.Controls.Segmented.MoveDirection)">
+            <summary>
+            Adjust the selected item and range based on keyboard input.
+            This is used to override the ListView behaviors for up/down arrow manipulation vs left/right for a horizontal control
+            </summary>
+            <param name="direction">direction to move the selection</param>
+            <returns>True if the focus was moved, false otherwise</returns>
+        </member>
+        <member name="T:CommunityToolkit.WinUI.Controls.SegmentedRns.GlobalStaticResources">
+            <summary>
+            Contains all the static resources defined for the application
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -32,6 +32,7 @@ namespace DevSAK.Services
             string database,
             string outputFilePath,
             MySqlBackupRestoreSettings settings,
+            string? zipOutputFilePath,
             IProgress<MySqlOperationUpdate>? progress,
             CancellationToken cancellationToken)
         {
@@ -47,12 +48,19 @@ namespace DevSAK.Services
             var usesMysqlPump = string.Equals(Path.GetFileName(backupToolPath), "mysqlpump.exe", StringComparison.OrdinalIgnoreCase);
             var tableEstimates = await _serverService.GetTableBackupEstimatesAsync(profile, database, cancellationToken).ConfigureAwait(false);
             var progressTracker = new BackupProgressTracker(progress, tableEstimates);
+            var shouldCompressToZip = !string.IsNullOrWhiteSpace(zipOutputFilePath);
 
             progress?.Report(MySqlOperationUpdate.Log($"Executável selecionado: {backupToolPath}"));
             progressTracker.ReportStage("Preparando backup...", 0);
             progress?.Report(MySqlOperationUpdate.Log("Validando parâmetros do backup..."));
             progressTracker.ReportStage("Validando conexão...", 8);
             progress?.Report(MySqlOperationUpdate.Log($"{tableEstimates.Count} tabelas analisadas para estimativa de progresso."));
+
+            if (shouldCompressToZip && File.Exists(outputFilePath))
+            {
+                TryDeleteFile(outputFilePath);
+                progress?.Report(MySqlOperationUpdate.Log("Arquivo SQL temporário anterior removido."));
+            }
 
             var tempDefaultsFile = CreateDefaultsFile(profile);
             try
@@ -124,8 +132,16 @@ namespace DevSAK.Services
                 }
 
                 progressTracker.ReportStage("Finalizando...", 95);
+
+                if (shouldCompressToZip)
+                {
+                    await CompressBackupSqlToZipAsync(outputFilePath, zipOutputFilePath!, progress, cancellationToken).ConfigureAwait(false);
+                }
+
                 progress?.Report(MySqlOperationUpdate.CreateStatus("Concluído com sucesso", 100, false));
-                progress?.Report(MySqlOperationUpdate.Log($"Arquivo SQL gerado em: {outputFilePath}"));
+                progress?.Report(MySqlOperationUpdate.Log(shouldCompressToZip
+                    ? $"Arquivo ZIP gerado em: {zipOutputFilePath}"
+                    : $"Arquivo SQL gerado em: {outputFilePath}"));
             }
             catch
             {
@@ -138,6 +154,15 @@ namespace DevSAK.Services
                 TryDeleteFile(tempDefaultsFile);
             }
         }
+
+        public Task BackupAsync(
+            MySqlConnectionProfile profile,
+            string database,
+            string outputFilePath,
+            MySqlBackupRestoreSettings settings,
+            IProgress<MySqlOperationUpdate>? progress,
+            CancellationToken cancellationToken)
+            => BackupAsync(profile, database, outputFilePath, settings, null, progress, cancellationToken);
 
         public async Task RestoreAsync(
             MySqlConnectionProfile profile,
@@ -304,23 +329,36 @@ namespace DevSAK.Services
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            await WriteRestoreInputAsync(
-                process,
-                sourceFileInfo,
-                disableForeignKeyChecks,
-                currentFileIndex,
-                totalFiles,
-                completedBytesBeforeFile,
-                totalBytes,
-                progress,
-                cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await WriteRestoreInputAsync(
+                    process,
+                    sourceFileInfo,
+                    disableForeignKeyChecks,
+                    currentFileIndex,
+                    totalFiles,
+                    completedBytesBeforeFile,
+                    totalBytes,
+                    progress,
+                    cancellationToken).ConfigureAwait(false);
 
-            progress?.Report(MySqlOperationUpdate.Log("Finalizando restauração..."));
-            progress?.Report(MySqlOperationUpdate.CreateStatus("Finalizando...", Math.Min(95, CalculateRestoreOverallPercentage(completedBytesBeforeFile + sourceFileInfo.Length, totalBytes)), false));
+                progress?.Report(MySqlOperationUpdate.Log("Finalizando restauração..."));
+                progress?.Report(MySqlOperationUpdate.CreateStatus("Finalizando...", Math.Min(95, CalculateRestoreOverallPercentage(completedBytesBeforeFile + sourceFileInfo.Length, totalBytes)), false));
 
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            await stdoutCompletion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-            await stderrCompletion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                await stdoutCompletion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await stderrCompletion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (cancellationToken.IsCancellationRequested && IsExpectedRestoreCancellationException(ex))
+            {
+                TryTerminateProcess(process);
+                throw new OperationCanceledException("Restauração cancelada pelo usuário.", ex, cancellationToken);
+            }
+            catch
+            {
+                TryTerminateProcess(process);
+                throw;
+            }
 
             if (process.ExitCode != 0)
             {
@@ -359,6 +397,60 @@ namespace DevSAK.Services
                 }
 
                 progressTracker.ReportHeartbeat(currentFileSize);
+            }
+        }
+
+        private static async Task CompressBackupSqlToZipAsync(
+            string sqlFilePath,
+            string zipOutputFilePath,
+            IProgress<MySqlOperationUpdate>? progress,
+            CancellationToken cancellationToken)
+        {
+            if (!File.Exists(sqlFilePath))
+            {
+                throw new FileNotFoundException("Arquivo SQL do backup não encontrado para compactação.", sqlFilePath);
+            }
+
+            progress?.Report(MySqlOperationUpdate.Log("Compactando backup em ZIP..."));
+            progress?.Report(MySqlOperationUpdate.CreateStatus("Compactando backup em ZIP...", 96, false));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(zipOutputFilePath)!);
+
+            if (File.Exists(zipOutputFilePath))
+            {
+                File.Delete(zipOutputFilePath);
+            }
+
+            var tempZipPath = zipOutputFilePath + ".tmp";
+            if (File.Exists(tempZipPath))
+            {
+                File.Delete(tempZipPath);
+            }
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    using var archive = ZipFile.Open(tempZipPath, ZipArchiveMode.Create);
+                    archive.CreateEntryFromFile(
+                        sqlFilePath,
+                        Path.GetFileName(sqlFilePath),
+                        CompressionLevel.Optimal);
+                }, cancellationToken).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(tempZipPath, zipOutputFilePath);
+                TryDeleteFile(sqlFilePath);
+
+                progress?.Report(MySqlOperationUpdate.CreateStatus("Backup compactado com sucesso.", 99, false));
+                progress?.Report(MySqlOperationUpdate.Log("Backup compactado com sucesso."));
+            }
+            catch
+            {
+                TryDeleteFile(tempZipPath);
+                throw;
             }
         }
 
@@ -405,7 +497,13 @@ namespace DevSAK.Services
             var lastLogBucket = -1;
             var lastProgressReportAt = DateTime.UtcNow;
 
-            await using var sourceStream = new FileStream(sourceFileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
+            await using var sourceStream = new FileStream(
+                sourceFileInfo.FullName,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 1024 * 1024,
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
 
             // Access the BaseStream directly without an await-using so we can close the StreamWriter
             // (process.StandardInput) at the end — that is the correct single close that signals EOF to mysql.exe.
@@ -418,45 +516,56 @@ namespace DevSAK.Services
             if (disableForeignKeyChecks)
             {
                 var prefix = Encoding.UTF8.GetBytes("SET FOREIGN_KEY_CHECKS = 0;\n");
-                await inputStream.WriteAsync(prefix, cancellationToken).ConfigureAwait(false);
+                await inputStream.WriteAsync(prefix.AsMemory(0, prefix.Length), cancellationToken).ConfigureAwait(false);
                 progress?.Report(MySqlOperationUpdate.Log("FOREIGN_KEY_CHECKS desabilitado temporariamente."));
             }
 
-            var buffer = new byte[65536];
-            int read;
-            while ((read = await sourceStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+            var buffer = new byte[1024 * 1024];
+            try
             {
-                await inputStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                bytesCopied += read;
-
-                if (ShouldReportRestoreProgress(totalBytes, bytesCopied, ref lastReportedProgress, ref lastProgressReportAt))
+                int read;
+                while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false)) > 0)
                 {
-                    var filePercentage = sourceFileInfo.Length <= 0 ? 100 : (bytesCopied * 100.0 / sourceFileInfo.Length);
-                    var overallPercentage = CalculateRestoreOverallPercentage(completedBytesBeforeFile + bytesCopied, totalBytes);
-                    progress?.Report(MySqlOperationUpdate.CreateStatus(
-                        $"Restaurando arquivo {currentFileIndex} de {totalFiles}... {filePercentage:N0}% concluído",
-                        overallPercentage,
-                        false));
+                    await inputStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                    bytesCopied += read;
 
-                    var currentLogBucket = (int)(filePercentage / 10);
-                    if (currentLogBucket > lastLogBucket && currentLogBucket is >= 0 and <= 10)
+                    if (ShouldReportRestoreProgress(totalBytes, bytesCopied, ref lastReportedProgress, ref lastProgressReportAt))
                     {
-                        lastLogBucket = currentLogBucket;
-                        progress?.Report(MySqlOperationUpdate.Log($"{Math.Min(100, currentLogBucket * 10)}% do arquivo SQL enviado."));
+                        var filePercentage = sourceFileInfo.Length <= 0 ? 100 : (bytesCopied * 100.0 / sourceFileInfo.Length);
+                        var overallPercentage = CalculateRestoreOverallPercentage(completedBytesBeforeFile + bytesCopied, totalBytes);
+                        progress?.Report(MySqlOperationUpdate.CreateStatus(
+                            $"Restaurando arquivo {currentFileIndex} de {totalFiles}... {filePercentage:N0}% concluído",
+                            overallPercentage,
+                            false));
+
+                        var currentLogBucket = (int)(filePercentage / 10);
+                        if (currentLogBucket > lastLogBucket && currentLogBucket is >= 0 and <= 10)
+                        {
+                            lastLogBucket = currentLogBucket;
+                            progress?.Report(MySqlOperationUpdate.Log($"{Math.Min(100, currentLogBucket * 10)}% do arquivo SQL enviado."));
+                        }
                     }
                 }
-            }
 
-            if (disableForeignKeyChecks)
+                if (disableForeignKeyChecks)
+                {
+                    var suffix = Encoding.UTF8.GetBytes("\nSET FOREIGN_KEY_CHECKS = 1;\n");
+                    await inputStream.WriteAsync(suffix.AsMemory(0, suffix.Length), cancellationToken).ConfigureAwait(false);
+                    progress?.Report(MySqlOperationUpdate.Log("FOREIGN_KEY_CHECKS reabilitado ao final da importação."));
+                }
+
+                await inputStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await process.StandardInput.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex) when (cancellationToken.IsCancellationRequested && IsExpectedRestoreCancellationException(ex))
             {
-                var suffix = Encoding.UTF8.GetBytes("\nSET FOREIGN_KEY_CHECKS = 1;\n");
-                await inputStream.WriteAsync(suffix, cancellationToken).ConfigureAwait(false);
-                progress?.Report(MySqlOperationUpdate.Log("FOREIGN_KEY_CHECKS reabilitado ao final da importação."));
+                throw new OperationCanceledException("Restauração cancelada pelo usuário.", ex, cancellationToken);
             }
-
-            await inputStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            // Close the StreamWriter — this signals EOF to mysql.exe and is the single correct close point.
-            process.StandardInput.Close();
+            catch (Exception ex) when (IsExpectedRestorePipeException(ex))
+            {
+                progress?.Report(MySqlOperationUpdate.Log($"Falha ao enviar dados para o mysql.exe: {ex.Message}"));
+                throw;
+            }
         }
 
         private static string BuildMysqldumpArguments(string defaultsFile, string database, string outputFilePath)
@@ -716,6 +825,12 @@ namespace DevSAK.Services
         {
             return $"\"{value.Replace("\"", "\\\"")}\"";
         }
+
+        private static bool IsExpectedRestoreCancellationException(Exception exception)
+            => exception is OperationCanceledException || IsExpectedRestorePipeException(exception);
+
+        private static bool IsExpectedRestorePipeException(Exception exception)
+            => exception is IOException or ObjectDisposedException or InvalidOperationException;
 
         private static void TryTerminateProcess(Process process)
         {

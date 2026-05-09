@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Fragment xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+  <Extensions>
+    <Extension Category="windows.activatableClass.proxyStub">
+      <ProxyStub ClassId="93022121-B6C9-4A22-90DB-763E24FD99E1">
+        <Path>Microsoft.Windows.Widgets.dll</Path>
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetProvider2" InterfaceId="38C3A963-DD93-479D-9276-04BF84EE1816"/>
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetProviderAnalytics" InterfaceId="661985A5-D187-482D-9EEF-6FDA05D21845"/>
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetProviderErrors" InterfaceId="90C1B5F0-0D3A-4AC6-ABB7-C97B367B8FCC"/>
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetResourceProvider" InterfaceId="DCF328C0-012C-40F5-BB28-3A1C714D027D" />
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetAnnouncementInvokedTarget" InterfaceId="2B62C81E-5947-439E-B213-7C59C13659A7"/>
+        <Interface Name="Microsoft.Windows.Widgets.Providers.IWidgetProviderMessage" InterfaceId="EA4DC186-9E24-4B35-A5EF-A9F5DF72D6AC"/>
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedProvider" InterfaceId="7293A12B-0329-458D-AC25-5332BE478FDE"/>
+
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedResourceProvider" InterfaceId="e1b6266d-88a0-416c-9440-e341cb047cd3"/>
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedProviderMessage" InterfaceId="60c2442a-4c9d-4880-ba26-caca9e567dd4"/>
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedProviderAnalytics" InterfaceId="f6885791-3085-4bd7-9cb1-4f1354c3a687"/>
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedProviderErrors" InterfaceId="6611e00a-d86c-49a3-9381-b7da67ee62dc"/>
+        <Interface Name="Microsoft.Windows.Widgets.Feeds.Providers.IFeedAnnouncementInvokedTarget" InterfaceId="5d44ae2a-072c-4df9-9fe5-34d5d2e9ff63"/>        
+      </ProxyStub>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.Widgets.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Providers.WidgetUpdateRequestOptions" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Providers.WidgetManager" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Providers.WidgetResourceResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Notifications.WidgetAnnouncement" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Feeds.Providers.FeedManager" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Feeds.Providers.CustomQueryParametersUpdateOptions" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Feeds.Providers.FeedResourceResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Widgets.Notifications.FeedAnnouncement" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+  </Extensions>
+</Fragment>

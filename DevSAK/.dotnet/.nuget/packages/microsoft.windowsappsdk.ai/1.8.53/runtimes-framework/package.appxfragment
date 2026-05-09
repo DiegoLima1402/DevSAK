@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Fragment xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+  <Extensions xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.AI.Imaging.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.TextRecognizer" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.TextRecognizerOptions" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.ImageDescriptionGenerator" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.ImageDescriptionResult" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.ImageObjectExtractor" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.ImageObjectRemover" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Imaging.ImageScaler" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Graphics.Imaging.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Graphics.Imaging.ImageBuffer" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.Workloads.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.Workloads.WorkloadManager" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.AI.Text.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Foundation.EmbeddingVector" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Text.LanguageModel" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Text.LanguageModelResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.Text.TextIntelligence" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Windows.AI.ContentSafety.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Windows.AI.ContentSafety.ContentFilterOptions" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.proxyStub">
+      <ProxyStub ClassId="4321F616-6804-40F2-B584-B0D7708A720D">
+        <Path>SessionHandleIPCProxyStub.dll</Path>
+        <Interface InterfaceId="2B54FB34-8041-4505-9F31-7FB3BA0D6255" Name="ISessionHandleIPC" />
+        <Interface InterfaceId="EBF3748D-1EF9-4B89-BA13-65D2B9EC04F0" Name="ISessionEventHandleIPC" />
+        <Interface InterfaceId="F75B465E-A49B-486F-ABBE-33F68E7E80ED" Name="ILanguageModelAdapterHandleIPC" />
+      </ProxyStub>
+    </Extension>
+  </Extensions>
+</Fragment>

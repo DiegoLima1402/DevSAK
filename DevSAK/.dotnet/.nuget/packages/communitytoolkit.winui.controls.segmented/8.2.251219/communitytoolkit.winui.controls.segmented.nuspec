@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>CommunityToolkit.WinUI.Controls.Segmented</id>
+    <version>8.2.251219</version>
+    <authors>Microsoft.Toolkit</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>ReadMe.md</readme>
+    <projectUrl>https://github.com/CommunityToolkit/Windows</projectUrl>
+    <iconUrl>https://github.com/CommunityToolkit/Windows/blob/main/icon.png</iconUrl>
+    <description>A common UI control to configure a view or setting.</description>
+    <releaseNotes>https://github.com/CommunityToolkit/Windows/releases</releaseNotes>
+    <copyright>(c) .NET Foundation and Contributors.  All rights reserved.</copyright>
+    <tags>Windows Community Toolkit WCT UWP WinUI Uno Platform WindowsAppSDK WASDK WinAppSDK Universal</tags>
+    <repository type="git" url="https://github.com/CommunityToolkit/Windows" branch="refs/heads/rel/8.2.251219" commit="a6b4dc451c0e54dd29f58743894a956100e7f713" />
+    <dependencies>
+      <group targetFramework="net8.0-windows10.0.19041">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.WindowsAppSDK" version="1.6.250108002" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Uno.Fonts.Fluent" version="2.4.5" exclude="Build,Analyzers" />
+        <dependency id="Uno.WinUI" version="5.5.87" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0-android35.0">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Uno.Fonts.Fluent" version="2.4.5" exclude="Build,Analyzers" />
+        <dependency id="Uno.WinUI" version="5.5.87" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0-ios18.0">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Uno.Fonts.Fluent" version="2.4.5" exclude="Build,Analyzers" />
+        <dependency id="Uno.WinUI" version="5.5.87" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0-maccatalyst18.0">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Uno.Fonts.Fluent" version="2.4.5" exclude="Build,Analyzers" />
+        <dependency id="Uno.WinUI" version="5.5.87" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0-windows10.0.19041">
+        <dependency id="CommunityToolkit.WinUI.Extensions" version="8.2.251219" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.WindowsAppSDK" version="1.6.250108002" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>
