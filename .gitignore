@@ -2,6 +2,9 @@
 # DevSAK - Git Ignore
 # =========================
 
+# Local .NET SDK / NuGet cache sometimes copied into the project tree
+.dotnet/
+
 # Visual Studio
 .vs/
 *.suo
@@ -27,6 +30,7 @@ ARM64/
 # Publish / packages
 publish/
 artifacts/
+Installer/output/
 AppPackages/
 BundleArtifacts/
 Package.StoreAssociation.xml

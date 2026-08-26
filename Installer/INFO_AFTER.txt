@@ -1,0 +1,27 @@
+O DevSAK foi instalado com sucesso para o usuário atual.
+
+Como abrir o aplicativo
+-----------------------
+Você pode abrir o DevSAK pelo Menu Iniciar ou pelo atalho correspondente
+na área de trabalho, se essa opção tiver sido marcada.
+
+Configurações do usuário
+------------------------
+As configurações do usuário são armazenadas fora do diretório de instalação,
+em pastas de dados do Windows (AppData). Atualizar ou reinstalar o aplicativo
+normalmente não remove essas configurações.
+
+Ferramentas embarcadas
+----------------------
+Ferramentas de desenvolvimento embarcadas, como os utilitários MySQL e o
+7-Zip, são gerenciadas internamente pelo DevSAK. Não é necessário instalá-las
+separadamente para usar os recursos correspondentes do aplicativo.
+
+Atualizações
+------------
+Atualizações futuras poderão ser distribuídas por meio de novas versões
+deste instalador.
+
+Repositório do projeto
+----------------------
+https://github.com/DiegoLima1402/DevSAK

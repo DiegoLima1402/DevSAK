@@ -5,72 +5,30 @@
 ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)
 ![C#](https://img.shields.io/badge/C%23-Desktop-239120?style=flat-square&logo=csharp)
 
-**DevSAK** é uma suíte desktop premium para Windows que reúne utilitários práticos para o dia a dia de desenvolvimento, implantação, certificados, banco de dados e diagnóstico de e-mail.
+**DevSAK** (*Developer Swiss Army Knife*) é uma suíte desktop para Windows com utilitários do dia a dia de desenvolvimento: compactação ZIP, certificados, backup/restauração MySQL e teste SMTP.
 
-Construído em **C#**, **.NET 8** e **WinUI 3**, o aplicativo entrega uma experiência moderna com visual nativo, suporte a tema claro/escuro, interface com Mica e ferramentas focadas em produtividade real.
+Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interface em Mica e ferramentas CLI embarcadas. Versão atual do projeto: **1.3.1**.
 
 ---
 
-## Visão geral
+## Ferramentas
 
-DevSAK significa **Developer Swiss Army Knife**: um canivete suíço para tarefas recorrentes que normalmente exigem scripts soltos, comandos manuais ou ferramentas separadas.
+| Ferramenta | O que faz |
+| --- | --- |
+| **Compactador (ZIP)** | Gera `.zip` a partir de um diretório, com nome manual ou timestamp, filtro por data, listas de ignore e progresso com cancelamento. |
+| **Ferramentas de certificado** | Exporta PEM (`.pfx`, `.p12`, `.cer`, `.crt`) e valida certificados (Subject, Issuer, validade, thumbprint, SAN/DNS, etc.). |
+| **MySQL Backup / Restore** | Perfis de conexão, backup com `mysqldump` (fallback `mysqlpump`), restore de `.sql`/arquivos compactados, opção de compactar o backup em ZIP e criação de banco quando aplicável. |
+| **Testar SMTP** | Envia mensagem de teste via MailKit (SSL/STARTTLS, autenticação) e exibe o resultado no console. |
 
-O projeto está organizado como uma aplicação Windows desktop com navegação por cards, páginas dedicadas para cada ferramenta e serviços internos responsáveis por execução, persistência de configurações e integração com CLIs auxiliares.
+---
 
-Versão atual declarada no projeto: **1.2.0**.
+## Interface
 
-## Ferramentas disponíveis
-
-### Compactador ZIP
-
-Cria pacotes `.zip` a partir de um diretório de origem, com foco em cenários de deploy.
-
-- Seleção de diretório de origem e destino.
-- Nome de arquivo manual ou automático com timestamp.
-- Filtro por data de modificação.
-- Listas para ignorar arquivos, pastas e extensões.
-- Progresso por etapa, arquivo atual e cancelamento da operação.
-
-### Certificados
-
-Área dedicada para trabalhar com certificados digitais.
-
-- Exportação de certificados para PEM.
-- Suporte a `.pfx`, `.p12`, `.cer` e `.crt`.
-- Exportação de certificado público, chave privada, arquivos separados ou PEM combinado.
-- Validação de certificado com detalhes como Subject, Issuer, validade, expiração, thumbprint, serial number, algoritmo, tamanho da chave e SAN/DNS names.
-- Log de execução, cópia de resumo e cópia de thumbprint.
-
-### MySQL Backup / Restore
-
-Interface para backup e restauração de bancos MySQL usando ferramentas CLI embarcadas.
-
-- Cadastro, edição e remoção de perfis de conexão.
-- Teste de conexão e listagem de bancos.
-- Backup com `mysqldump.exe` e fallback opcional para `mysqlpump.exe`.
-- Restauração de arquivos `.sql`.
-- Restauração a partir de arquivos compactados, com extração via suporte nativo a `.zip` ou 7-Zip embarcado para outros formatos.
-- Opções para desabilitar `FOREIGN_KEY_CHECKS` e recriar a base antes da restauração.
-- Console de saída com auto-rolagem, cópia de log, progresso e cancelamento seguro.
-
-### Teste SMTP
-
-Ferramenta para validar envio de e-mail por servidores SMTP.
-
-- Configuração de servidor, porta, usuário, senha, remetente, destinatário, assunto e mensagem.
-- Opções de SSL, STARTTLS, autenticação e uso de credenciais.
-- Envio de mensagem de teste via MailKit.
-- Console de saída com status da conexão, validação TLS, autenticação e envio.
-
-## Experiência visual
-
-O aplicativo usa uma tela inicial com cards de ferramentas, ícones Fluent, janela maximizada por padrão e alternância manual entre temas.
+Dashboard com cards, ícones Fluent e alternância de tema. O tema escolhido é gravado em `%AppData%\DevSAK` e restaurado na próxima execução.
 
 | Tema claro | Tema escuro |
 | --- | --- |
 | ![Dashboard em tema claro](docs/screenshots/home-light.png) | ![Dashboard em tema escuro](docs/screenshots/home-dark.png) |
-
-### Ferramentas em destaque
 
 | Compactador ZIP | Certificados |
 | --- | --- |
@@ -80,142 +38,154 @@ O aplicativo usa uma tela inicial com cards de ferramentas, ícones Fluent, jane
 | --- | --- |
 | ![MySQL Backup / Restore](docs/screenshots/tool_mysql_restore_backup.png) | ![Teste SMTP](docs/screenshots/tool_smtp_test.png) |
 
+Após atualizar para uma versão nova, o DevSAK pode exibir as **notas de versão** uma vez (conteúdo em `Resources/ReleaseNotes`). A última versão exibida fica salva localmente.
+
+---
+
 ## Tecnologias
 
-- **C# / .NET 8** com `net8.0-windows10.0.19041.0`.
-- **WinUI 3** com Windows App SDK.
-- **MSIX tooling** para empacotamento.
-- **CommunityToolkit.WinUI.Controls.Segmented** para controles segmentados.
-- **MailKit / MimeKit** para envio e validação SMTP.
-- **MySqlConnector** para operações auxiliares com MySQL.
-- **System.Security.Cryptography.ProtectedData** para proteger senhas no usuário atual do Windows.
-- **System.IO.Compression** para geração de ZIP e extração nativa de `.zip`.
-- Assets próprios para ícone, splash screen, logos e temas.
+Stack efetivamente usada no projeto:
 
-## Estrutura do projeto
+- **C# / .NET 8** (`net8.0-windows10.0.19041.0`), Windows 10 1809 ou posterior
+- **WinUI 3** e **Windows App SDK** (`Microsoft.WindowsAppSDK`)
+- **XAML** (páginas, temas e janela principal)
+- **CommunityToolkit.WinUI.Controls.Segmented**
+- **MailKit / MimeKit** (SMTP) e **BouncyCastle** (exportação PEM)
+- **MySqlConnector** (operações auxiliares MySQL)
+- **System.IO.Compression** (ZIP nativo)
+- **System.Text.Json** e **System.Security.Cryptography.ProtectedData** (configurações e senhas no escopo do usuário Windows)
+- **Process** para executar `mysqldump` / `mysql` / `7z` embarcados
+
+---
+
+## Estrutura
 
 ```text
+DevSAK.slnx
+README.md
+docs/                      # Logos e screenshots da documentação
+Installer/                 # Script e arquivos de apoio do Inno Setup
 DevSAK/
-├─ Assets/                 # Ícones, logos, splash screen e imagens do pacote
-├─ Converters/             # Conversores usados pelo XAML
-├─ Models/                 # Modelos das ferramentas e estados de operação
-├─ Services/               # Regras de negócio, persistência e integração com CLIs
-├─ Themes/                 # Recursos de tema claro/escuro e cores da aplicação
+├─ Assets/                 # Ícone, logos e imagens do app
+├─ Converters/
+├─ Models/
+├─ Resources/ReleaseNotes/ # Notas de versão empacotadas com o app
+├─ Services/
+├─ Themes/
 ├─ Tools/
-│  ├─ 7Zip/                # 7z.exe, 7z.dll e licença do 7-Zip
-│  └─ MySql/               # Executáveis e DLLs do cliente MySQL
-├─ ViewModels/             # ViewModels das páginas
-├─ Views/                  # Telas WinUI das ferramentas
-├─ App.xaml                # Recursos globais da aplicação
-├─ MainWindow.xaml         # Dashboard, navegação e alternância de tema
-├─ Package.appxmanifest    # Manifesto MSIX
-└─ DevSAK.csproj           # Configuração do projeto .NET/WinUI
+│  ├─ 7Zip/                # 7z.exe, 7z.dll, License.txt
+│  └─ MySql/               # Cliente MySQL (mysql, mysqldump, mysqlpump, …)
+├─ ViewModels/
+├─ Views/
+├─ Properties/PublishProfiles/   # Perfil de publicação win-x64
+├─ App.xaml
+├─ MainWindow.xaml
+└─ DevSAK.csproj
 ```
 
-Na raiz do repositório:
+`Tools` faz parte do runtime: os binários são copiados para a saída do build e entram no `publish` de produção.
 
-```text
-DevSAK.slnx                # Solução do Visual Studio
-README.md                 # Documentação do projeto
-Logos_Originais/          # Arquivos originais de logo e ícone
-```
+---
 
-## Como executar localmente
+## Desenvolvimento (Visual Studio)
 
-### Pré-requisitos
+Pré-requisitos:
 
-- Windows 10/11.
-- Visual Studio 2022 com workload de desenvolvimento desktop .NET e suporte a Windows App SDK/WinUI.
-- .NET SDK compatível com .NET 8.
+- Windows 10 ou 11 (x64 recomendado)
+- Visual Studio 2022 com suporte a desenvolvimento Windows / WinUI 3 / Windows App SDK
+- SDK do .NET 8
 
-### Pelo Visual Studio
+1. Clone o repositório.
+2. Abra `DevSAK.slnx`.
+3. Restaure os pacotes NuGet (o Visual Studio faz isso ao abrir a solução).
+4. Selecione a plataforma **x64** e a configuração **Debug**.
+5. Use o perfil **DevSAK (Unpackaged)** para executar o projeto diretamente (há também **DevSAK (Package)** para o fluxo MSIX de desenvolvimento).
+6. Compile e inicie a depuração.
 
-1. Abra `DevSAK.slnx`.
-2. Selecione a plataforma desejada, normalmente `x64`.
-3. Escolha um dos perfis:
-   - **DevSAK (Package)** para execução como pacote MSIX.
-   - **DevSAK (Unpackaged)** para execução direta do projeto.
-4. Compile e execute.
-
-### Pela linha de comando
+Pela linha de comando:
 
 ```powershell
 dotnet build .\DevSAK.slnx -p:Platform=x64
-```
-
-Para executar o projeto diretamente:
-
-```powershell
 dotnet run --project .\DevSAK\DevSAK.csproj -p:Platform=x64
 ```
 
-## Build e publicação
+---
 
-O projeto está preparado para Windows desktop com:
+## Produção (self-contained)
 
-- `OutputType` como `WinExe`.
-- `UseWinUI` habilitado.
-- `EnableMsixTooling` habilitado.
-- Plataformas `x86`, `x64` e `ARM64`.
-- Runtime identifiers `win-x86`, `win-x64` e `win-arm64`.
-- `PublishReadyToRun` habilitado fora de Debug.
-- `PublishTrimmed` desabilitado.
+A distribuição de produção é **self-contained** e **unpackaged**:
 
-Para gerar builds de publicação, use o fluxo de **Publish** do Visual Studio para WinUI/MSIX ou publique pela CLI informando a plataforma/runtime desejados.
+- Configuração: **Release**
+- Arquitetura: **x64**
+- Runtime: **win-x64**
+- `SelfContained=true`
+- `WindowsAppSDKSelfContained=true`
 
-Exemplo:
+O payload final fica em:
 
-```powershell
-dotnet publish .\DevSAK\DevSAK.csproj -c Release -p:Platform=x64 -r win-x64
+```text
+DevSAK/bin/x64/Release/net8.0-windows10.0.19041.0/win-x64/publish/
 ```
 
-## Ferramentas e arquivos embarcados
+Essa pasta `publish` é o que o instalador empacota. O diretório `publish` em si **não** deve aparecer como subpasta na instalação (`…\DevSAK\DevSAK.exe`, não `…\DevSAK\publish\…`).
 
-O DevSAK inclui ferramentas auxiliares dentro de `DevSAK/Tools`.
+Self-contained, neste projeto, significa que o `publish` inclui o runtime do **.NET 8** e os arquivos do **Windows App SDK**. O computador de destino **não precisa do SDK do .NET**. O instalador ainda pode instalar o **WebView2 Runtime** (dependência do Windows App SDK) se ele ainda não estiver no Windows.
 
-### MySQL
+### Publicar pelo Visual Studio
 
-A pasta `Tools/MySql` contém executáveis e DLLs do cliente MySQL usados pela ferramenta de backup e restauração, incluindo:
+1. Abra `DevSAK.slnx`.
+2. Selecione **Release** e **x64**.
+3. Clique com o botão direito no projeto **DevSAK** → **Publish**.
+4. Use o perfil **win-x64** (`Properties/PublishProfiles/win-x64.pubxml`).
+5. Publique. Confira a pasta `publish` indicada acima.
 
-- `mysql.exe`
-- `mysqldump.exe`
-- `mysqlpump.exe`
-- bibliotecas necessárias para execução dos utilitários
+### Publicar pela linha de comando
 
-Durante o build, esses arquivos são copiados para o diretório de saída em `Tools/MySql`.
+Use o perfil do projeto (ele aplica self-contained, Windows App SDK embarcado e a limpeza de pastas de idioma extras):
 
-### 7-Zip
+```powershell
+dotnet publish .\DevSAK\DevSAK.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64
+```
 
-A pasta `Tools/7Zip` contém:
+---
 
-- `7z.exe`
-- `7z.dll`
-- `License.txt`
+## Instalador
 
-O 7-Zip é usado como apoio na extração de arquivos compactados durante restaurações MySQL quando o arquivo selecionado não é um `.zip` suportado nativamente.
+O diretório `Installer/` contém o script Inno Setup e os arquivos de apoio (`LICENSE.txt`, `INFO_BEFORE.txt`, `INFO_AFTER.txt`, ícone, bootstrapper do WebView2).
+
+- O setup instala o **conteúdo** de `publish` para o usuário atual (`%LocalAppData%\Programs\DevSAK`).
+- A saída gerada (`Installer/output/`, por exemplo `DevSAK_Installer_v1.3.1.exe`) não deve ser commitada (está no `.gitignore`).
+- Detalhes para quem mantém o instalador: `Installer/README.md`.
+
+---
 
 ## Configurações locais
 
-Algumas preferências são salvas em `%AppData%\DevSAK`.
+Gravadas em `%AppData%\DevSAK` (fora da pasta de instalação):
 
-- `AppZipSettings.json`: configurações do compactador ZIP.
-- `SmtpTestSettings.json`: configurações da ferramenta SMTP.
-- `MySqlConnections.json`: perfis de conexão MySQL.
+| Arquivo | Uso |
+| --- | --- |
+| `appsettings.json` | Tema e última versão das notas de release |
+| `AppZipSettings.json` | Compactador ZIP |
+| `SmtpTestSettings.json` | Teste SMTP |
+| `MySqlConnections.json` | Perfis MySQL |
+| `MySqlBackupRestoreSettings.json` | Preferências de backup/restore |
 
-Senhas armazenadas pelas ferramentas são protegidas com DPAPI via `ProtectedData`, usando o escopo do usuário atual do Windows.
+Senhas das ferramentas usam DPAPI (`ProtectedData`) no escopo do usuário Windows.
 
-## Roadmap
+---
 
-Ideias naturais para evolução do projeto:
+## Componentes de terceiros
 
-- Adicionar capturas reais da interface na documentação.
-- Criar instalador ou pipeline automatizado de publicação.
-- Ampliar a suíte com novos utilitários de desenvolvimento.
-- Adicionar testes automatizados para serviços críticos.
-- Documentar origem e versão dos binários embarcados em `Tools`.
+O DevSAK distribui utilitários de terceiros em `DevSAK/Tools`. Eles permanecem sob as respectivas licenças:
+
+- **MySQL** — cliente CLI em `Tools/MySql`
+- **7-Zip** — `Tools/7Zip` (`License.txt` incluso); usado na extração de compactados que não são `.zip` nativo
+
+A licença do DevSAK está em `Installer/LICENSE.txt`. Bibliotecas NuGet (MailKit, BouncyCastle, Windows App SDK, etc.) seguem os termos de cada pacote.
+
+---
 
 ## Licença
 
-Nenhuma licença principal do projeto foi identificada no repositório.
-
-Há uma licença específica do 7-Zip em `DevSAK/Tools/7Zip/License.txt`. Caso o projeto seja distribuído publicamente, recomenda-se adicionar uma licença explícita para o DevSAK e revisar as obrigações das ferramentas embarcadas.
+Uso restrito conforme `Installer/LICENSE.txt`. Componentes de terceiros não são relicenciados pelo DevSAK.

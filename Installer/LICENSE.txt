@@ -1,0 +1,79 @@
+Este arquivo descreve os termos de uso do software DevSAK ("Software").
+Ao instalar, copiar ou utilizar o Software, você concorda com estes termos.
+
+Não há, neste repositório, uma licença de código aberto, um contrato comercial
+publicado nem termos de venda. Na ausência desses documentos, o Software é
+licenciado de forma restrita, conforme abaixo.
+
+
+1. USO PERMITIDO
+----------------
+Você pode instalar e utilizar o Software em computadores Windows de sua
+propriedade ou sob seu controle, para fins pessoais ou profissionais, desde
+que cumpra esta licença.
+
+O Software é licenciado, e não vendido.
+
+
+2. RESTRIÇÕES DE REDISTRIBUIÇÃO
+-------------------------------
+Salvo autorização prévia e por escrito do titular dos direitos autorais, não
+é permitido:
+
+- redistribuir, publicar, sublicenciar, vender, alugar ou ceder o Software;
+- disponibilizar o instalador, os binários ou o código-fonte a terceiros;
+- incluir o Software em outro produto, pacote ou serviço distribuído.
+
+Cópias de backup para uso próprio são permitidas.
+
+
+3. RESTRIÇÕES DE MODIFICAÇÃO
+----------------------------
+Salvo autorização prévia e por escrito do titular dos direitos autorais, ou
+quando a lei aplicável proibir essa limitação, não é permitido:
+
+- modificar, adaptar ou criar obras derivadas do Software;
+- descompilar, desmontar ou realizar engenharia reversa do Software.
+
+
+4. AUSÊNCIA DE GARANTIA
+-----------------------
+O Software é fornecido "no estado em que se encontra", sem garantias de
+qualquer tipo, expressas ou implícitas, incluindo, sem limitação, garantias
+de comercialização, adequação a um propósito específico, disponibilidade,
+desempenho ou não violação.
+
+O titular dos direitos autorais não se responsabiliza por danos diretos,
+indiretos, incidentais, especiais ou consequenciais decorrentes do uso ou da
+impossibilidade de uso do Software, incluindo perda de dados, interrupção de
+atividades ou falhas em backups, restaurações, certificados ou envio de
+e-mail, na máxima extensão permitida pela lei aplicável.
+
+
+5. COMPONENTES E FERRAMENTAS DE TERCEIROS
+-----------------------------------------
+O DevSAK inclui ou pode incluir componentes, bibliotecas e ferramentas de
+terceiros, por exemplo:
+
+- utilitários de cliente MySQL;
+- 7-Zip;
+- BouncyCastle;
+- MailKit / MimeKit;
+- Microsoft Windows App SDK e demais componentes Microsoft;
+- outras dependências NuGet utilizadas pelo projeto.
+
+Esses componentes permanecem sujeitos às respectivas licenças, termos e
+avisos de seus titulares. Esta licença do DevSAK não altera, substitui nem
+amplia os direitos concedidos pelos licenciadores de terceiros.
+
+Arquivos de licença já presentes no repositório, como o do 7-Zip em
+Tools/7Zip/License.txt, devem ser preservados quando o Software for
+empacotado ou distribuído.
+
+Licenças completas de terceiros não são reproduzidas neste arquivo.
+
+
+6. DIREITOS RESERVADOS
+----------------------
+Todos os direitos não concedidos expressamente nesta licença são reservados
+ao titular dos direitos autorais.

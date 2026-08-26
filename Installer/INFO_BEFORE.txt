@@ -1,0 +1,40 @@
+O DevSAK é uma suíte de utilitários para desktop Windows, voltada a
+desenvolvedores. Ele reúne ferramentas para compactação ZIP, certificados,
+backup e restauração MySQL e teste de envio SMTP.
+
+Arquitetura atual do aplicativo
+-------------------------------
+- Linguagem: C#
+- Runtime: .NET 8
+- Interface: WinUI 3
+- Plataforma: Windows App SDK
+
+Ambiente suportado
+------------------
+O projeto tem como destino o Windows 10, versão 1809 (build 17763) ou
+posterior, incluindo o Windows 11.
+
+A instalação é destinada ao Windows 64 bits (x64) e é feita apenas para
+o usuário atual, sem privilégios de administrador. O aplicativo é
+instalado em AppData\Local\Programs\DevSAK.
+
+Se existir uma instalação anterior em Program Files, desinstale-a antes
+de continuar, para evitar duas cópias do aplicativo.
+
+Ferramentas externas
+--------------------
+Algumas funcionalidades utilizam ferramentas externas embarcadas no próprio
+DevSAK, como utilitários de cliente MySQL e o 7-Zip. Esses componentes são
+gerenciados internamente pelo aplicativo.
+
+Antes de continuar
+------------------
+- Feche qualquer instância do DevSAK que esteja em execução antes de
+  instalar ou atualizar.
+- As configurações do usuário armazenadas em AppData normalmente são
+  preservadas e não ficam no diretório de instalação do aplicativo.
+- Esta instalação inclui os componentes de runtime do .NET e do Windows
+  App SDK necessários para executar o DevSAK.
+- Se o Microsoft Edge WebView2 Runtime não estiver presente (comum em
+  alguns Windows 10 antigos), o instalador tentará instalá-lo para o
+  usuário atual. Isso pode exigir conexão com a internet.
