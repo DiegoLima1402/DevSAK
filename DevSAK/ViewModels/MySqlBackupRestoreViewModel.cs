@@ -97,6 +97,41 @@ namespace DevSAK.ViewModels
         public ObservableCollection<MySqlConnectionProfile> Connections { get; }
 
         public ObservableCollection<string> Databases { get; }
+        public MySqlRestoreOptions RestoreOptions { get; private set; } = new();
+        public ObservableCollection<MySqlRestoreFile> RestoreFiles { get; } = new();
+        public string RestoreAnalysis { get; private set; } = "Analise o backup para revisar comandos e ordenar os arquivos.";
+        public async Task AnalyzeRestoreAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                var result = await _backupRestoreService.AnalyzeRestoreAsync(SourceSqlFile, RestoreOptions, cts.Token);
+                RestoreFiles.Clear();
+                foreach (var name in result.Files) RestoreFiles.Add(new MySqlRestoreFile { Name = name });
+                RestoreAnalysis = result.Files.Count + " arquivo(s) SQL.\n" + (string.IsNullOrEmpty(result.Summary) ? "Nenhum comando especial identificado." : result.Summary);
+                OnPropertyChanged(nameof(RestoreAnalysis));
+            }
+            finally { IsBusy = false; }
+        }
+
+        public MySqlBackupOptions BackupOptions { get; private set; } = new();
+        public ObservableCollection<MySqlBackupTable> BackupTables { get; } = new();
+
+        public async Task LoadBackupTablesAsync()
+        {
+            if (SelectedConnection is null || string.IsNullOrWhiteSpace(SelectedDatabase) || !IsSelectedConnectionValidated)
+                throw new InvalidOperationException("Teste a conexão e selecione um banco antes de carregar as tabelas.");
+            try
+            {
+                IsBusy = true;
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var tables = await _serverService.ListBackupTablesAsync(SelectedConnection, SelectedDatabase, cts.Token);
+                BackupTables.Clear();
+                foreach (var table in tables) BackupTables.Add(new MySqlBackupTable { Name = table });
+            }
+            finally { IsBusy = false; }
+        }
 
         public MySqlConnectionProfile? SelectedConnection
         {
@@ -109,6 +144,7 @@ namespace DevSAK.ViewModels
                 }
 
                 _selectedConnection = value;
+                BackupTables.Clear();
                 ResetConnectionStatus();
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanEditSelectedConnection));
@@ -130,6 +166,7 @@ namespace DevSAK.ViewModels
                 }
 
                 _selectedDatabase = normalizedValue;
+                BackupTables.Clear();
                 if (IsBackupMode && string.IsNullOrWhiteSpace(OutputFileNameBase) && !string.IsNullOrWhiteSpace(normalizedValue))
                 {
                     OutputFileNameBase = normalizedValue;
@@ -187,6 +224,7 @@ namespace DevSAK.ViewModels
                 }
 
                 _sourceSqlFile = value;
+                RestoreFiles.Clear();
                 OnPropertyChanged();
             }
         }
@@ -537,6 +575,10 @@ namespace DevSAK.ViewModels
             }
 
             _settings = await LoadSettingsAsync();
+            RestoreOptions = _settings.RestoreOptions ?? new();
+            OnPropertyChanged(nameof(RestoreOptions));
+            BackupOptions = _settings.BackupOptions ?? new();
+            OnPropertyChanged(nameof(BackupOptions));
             Mode = _settings.LastMode;
             SourceSqlFile = _settings.LastSourceSqlFile ?? string.Empty;
             CompressBackupToZip = _settings.CompressBackupToZip;
@@ -729,6 +771,7 @@ namespace DevSAK.ViewModels
                 throw new InvalidOperationException("Selecione uma conexão válida e um banco de dados.");
             }
 
+            var operationClock = System.Diagnostics.Stopwatch.StartNew();
             _operationCts = new CancellationTokenSource();
 
             var progress = new MySqlOperationProgress(HandleOperationUpdate);
@@ -761,6 +804,7 @@ namespace DevSAK.ViewModels
                 var compressBackupToZip = CompressBackupToZip;
                 var token = _operationCts.Token;
 
+                bool restoreHadErrors = false;
                 if (IsBackupMode)
                 {
                     await _backupRestoreService.BackupAsync(
@@ -770,11 +814,12 @@ namespace DevSAK.ViewModels
                         settings,
                         compressBackupToZip ? destFile : null,
                         progress,
-                        token).ConfigureAwait(true);
+                        token,
+                        BackupTables.Where(t => !t.IsIncluded).Select(t => t.Name).ToArray()).ConfigureAwait(true);
                 }
                 else
                 {
-                    await _backupRestoreService.RestoreAsync(
+                    restoreHadErrors = await _backupRestoreService.RestoreAsync(
                         connection,
                         database,
                         sourceFile,
@@ -786,9 +831,9 @@ namespace DevSAK.ViewModels
                 }
 
                 // UI thread from here.
-                StatusText = "Concluído com sucesso";
-                SetProgressState(100, false, "Concluído", true);
-                AppendLog(IsBackupMode ? "Backup concluído com sucesso." : "Restauração concluída com sucesso.");
+                StatusText = restoreHadErrors ? "Concluído com erros" : "Concluído com sucesso";
+                SetProgressState(100, false, restoreHadErrors ? "Com erros" : "Concluído", !restoreHadErrors);
+                AppendLog(IsBackupMode ? "Backup concluído com sucesso." : StatusText);
                 FlushPendingLogToUi();
             }
             catch (OperationCanceledException)
@@ -809,6 +854,11 @@ namespace DevSAK.ViewModels
             }
             finally
             {
+                if (IsRestoreMode && RestoreOptions.SaveReport)
+                {
+                    try { var report = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(_settingsFilePath)!, "Restore-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".log"); await System.IO.File.WriteAllTextAsync(report, "Duração: " + operationClock.Elapsed + Environment.NewLine + "Destino: " + SelectedConnection + " / " + targetDatabase + Environment.NewLine + System.Text.Json.JsonSerializer.Serialize(RestoreOptions) + Environment.NewLine + _logBuilder.ToString()); AppendLog("Relatório salvo: " + report); }
+                    catch (Exception ex) { AppendLog("Não foi possível salvar o relatório: " + ex.Message); }
+                }
                 IsBusy = false;
                 _operationCts?.Dispose();
                 _operationCts = null;
@@ -1026,6 +1076,9 @@ namespace DevSAK.ViewModels
 
             if (IsBackupMode)
             {
+                if (BackupTables.Count > 0 && !BackupTables.Any(t => t.IsIncluded))
+                    throw new InvalidOperationException("Selecione pelo menos uma tabela ou view para exportar.");
+
                 if (string.IsNullOrWhiteSpace(SelectedDatabase) ||
                     !Databases.Contains(SelectedDatabase, StringComparer.OrdinalIgnoreCase))
                 {
@@ -1055,13 +1108,15 @@ namespace DevSAK.ViewModels
             }
             else
             {
+                if (RestoreFiles.Count > 0 && !RestoreFiles.Any(f => f.IsIncluded)) throw new InvalidOperationException("Selecione pelo menos um arquivo SQL.");
+                if (RestoreOptions.RemapDatabase && string.IsNullOrWhiteSpace(RestoreOptions.SourceDatabase)) throw new InvalidOperationException("Informe o banco de origem para remapear referências.");
                 var restoreTarget = NormalizeDatabaseName(RestoreDatabaseName);
                 if (string.IsNullOrWhiteSpace(restoreTarget))
                 {
                     throw new InvalidOperationException("Selecione um banco de dados de destino válido para a restauração.");
                 }
 
-                if (!RecreateDatabaseBeforeRestore &&
+                if (!RecreateDatabaseBeforeRestore && !RestoreOptions.CreateDatabase &&
                     !Databases.Contains(restoreTarget, StringComparer.OrdinalIgnoreCase))
                 {
                     throw new InvalidOperationException("Selecione um banco de dados existente ou marque a opção para excluir e recriar a base antes da restauração.");
@@ -1081,6 +1136,9 @@ namespace DevSAK.ViewModels
 
         private void UpdateSettingsFromUi()
         {
+            _settings.BackupOptions = BackupOptions;
+            _settings.RestoreOptions = RestoreOptions;
+            RestoreOptions.SelectedFiles = RestoreFiles.Count == 0 ? null : RestoreFiles.Where(f => f.IsIncluded).Select(f => f.Name).ToList();
             _settings.LastSelectedConnectionId = SelectedConnection?.Id;
             _settings.LastSelectedDatabase = IsBackupMode ? SelectedDatabase : RestoreDatabaseName.Trim();
             _settings.LastMode = Mode;

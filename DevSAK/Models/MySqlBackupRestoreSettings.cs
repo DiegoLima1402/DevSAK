@@ -4,6 +4,10 @@ namespace DevSAK.Models
 {
     public class MySqlBackupRestoreSettings
     {
+        public MySqlRestoreOptions RestoreOptions { get; set; } = new();
+
+        public MySqlBackupOptions BackupOptions { get; set; } = new();
+
         public string? LastSelectedConnectionId { get; set; }
 
         public string? LastSelectedDatabase { get; set; }

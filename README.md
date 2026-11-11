@@ -17,7 +17,7 @@ Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interfac
 | --- | --- |
 | **Compactador (ZIP)** | Gera `.zip` a partir de um diretório, com nome manual ou timestamp, filtro por data, listas de ignore e progresso com cancelamento. |
 | **Ferramentas de certificado** | Exporta PEM (`.pfx`, `.p12`, `.cer`, `.crt`) e valida certificados (Subject, Issuer, validade, thumbprint, SAN/DNS, etc.). |
-| **MySQL Backup / Restore** | Perfis de conexão, backup com `mysqldump` (fallback `mysqlpump`), restore de `.sql`/arquivos compactados, opção de compactar o backup em ZIP e criação de banco quando aplicável. |
+| **MySQL Backup / Restore** | Perfis de conexão, backup configurável com `mysqldump`, restore de `.sql`/arquivos compactados, opção de compactar o backup em ZIP e criação de banco quando aplicável. |
 | **Testar SMTP** | Envia mensagem de teste via MailKit (SSL/STARTTLS, autenticação) e exibe o resultado no console. |
 
 ---

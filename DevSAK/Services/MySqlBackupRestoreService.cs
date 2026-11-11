@@ -34,20 +34,21 @@ namespace DevSAK.Services
             MySqlBackupRestoreSettings settings,
             string? zipOutputFilePath,
             IProgress<MySqlOperationUpdate>? progress,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            IReadOnlyList<string>? excludedTables = null)
         {
             var cliPaths = _cliLocator.Locate();
-            if (string.IsNullOrWhiteSpace(cliPaths.PreferredBackupPath))
+            if (string.IsNullOrWhiteSpace(cliPaths.MysqldumpPath))
             {
-                throw new InvalidOperationException("Não foi possível localizar mysqldump.exe. Para testes manuais, mysqlpump.exe também pode ser usado como fallback opcional.");
+                throw new InvalidOperationException("Não foi possível localizar mysqldump.exe.");
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
 
-            var backupToolPath = cliPaths.PreferredBackupPath!;
-            var usesMysqlPump = string.Equals(Path.GetFileName(backupToolPath), "mysqlpump.exe", StringComparison.OrdinalIgnoreCase);
+            var backupToolPath = cliPaths.MysqldumpPath!;
             var tableEstimates = await _serverService.GetTableBackupEstimatesAsync(profile, database, cancellationToken).ConfigureAwait(false);
-            var progressTracker = new BackupProgressTracker(progress, tableEstimates);
+            var includedEstimates = tableEstimates.Where(table => excludedTables is null || !excludedTables.Contains(table.TableName, StringComparer.Ordinal)).ToList();
+            var progressTracker = new BackupProgressTracker(progress, includedEstimates);
             var shouldCompressToZip = !string.IsNullOrWhiteSpace(zipOutputFilePath);
 
             progress?.Report(MySqlOperationUpdate.Log($"Executável selecionado: {backupToolPath}"));
@@ -65,9 +66,7 @@ namespace DevSAK.Services
             var tempDefaultsFile = CreateDefaultsFile(profile);
             try
             {
-                var arguments = usesMysqlPump
-                    ? BuildMysqlPumpArguments(tempDefaultsFile, database)
-                    : BuildMysqldumpArguments(tempDefaultsFile, database, outputFilePath);
+                var arguments = MySqlDumpArguments.Build(tempDefaultsFile, database, outputFilePath, settings.BackupOptions, excludedTables);
 
                 progress?.Report(MySqlOperationUpdate.Log($"Comando: {Path.GetFileName(backupToolPath)} {arguments}"));
                 progressTracker.ReportStage("Iniciando mysqldump...", 15);
@@ -164,7 +163,7 @@ namespace DevSAK.Services
             CancellationToken cancellationToken)
             => BackupAsync(profile, database, outputFilePath, settings, null, progress, cancellationToken);
 
-        public async Task RestoreAsync(
+        public async Task<bool> RestoreAsync(
             MySqlConnectionProfile profile,
             string database,
             string sourceFilePath,
@@ -202,10 +201,32 @@ namespace DevSAK.Services
                     throw new InvalidOperationException("Nenhum arquivo .sql foi encontrado para restauração.");
                 }
 
+                if (settings.RestoreOptions.SelectedFiles is not null)
+                {
+                    var ordered = settings.RestoreOptions.SelectedFiles.Select(name => sqlFiles.Files.Single(f => GetRestoreDisplayName(f, tempExtractionFolder) == name)).ToList();
+                    sqlFiles = new RestoreSqlFileSet(ordered, tempExtractionFolder);
+                    if (ordered.Count == 0) throw new InvalidOperationException("Selecione pelo menos um arquivo SQL.");
+                }
+                if (settings.RestoreOptions.CreateDatabase && !recreateDatabaseBeforeRestore)
+                    await _serverService.CreateDatabaseAsync(profile, database, cancellationToken);
+                var preparedFolder = Path.Combine(Path.GetTempPath(), "devsak-restore-prepared-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(preparedFolder);
+                try
+                {
+                    var prepared = new List<FileInfo>();
+                    foreach (var file in sqlFiles.Files)
+                    {
+                        var path = Path.Combine(preparedFolder, prepared.Count + ".sql");
+                        progress?.Report(MySqlOperationUpdate.Log("Preparando: " + file.Name));
+                        await Task.Run(() => MySqlRestoreScript.Process(file.FullName, path, settings.RestoreOptions, database, disableForeignKeyChecks, _ => { }, cancellationToken), cancellationToken);
+                        prepared.Add(new FileInfo(path));
+                    }
+                    sqlFiles = new RestoreSqlFileSet(prepared, tempExtractionFolder);
                 progress?.Report(MySqlOperationUpdate.Log($"{sqlFiles.Files.Count} arquivo(s) SQL encontrado(s) para restauração."));
                 var totalBytes = Math.Max(1L, sqlFiles.Files.Sum(file => file.Length));
                 long completedBytes = 0;
 
+                bool hadErrors = false;
                 for (var index = 0; index < sqlFiles.Files.Count; index++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -218,7 +239,7 @@ namespace DevSAK.Services
                     progress?.Report(MySqlOperationUpdate.Log($"Restaurando arquivo {restoreIndex} de {sqlFiles.Files.Count}: {displayName}"));
                     progress?.Report(MySqlOperationUpdate.CreateStatus($"Restaurando arquivo {restoreIndex} de {sqlFiles.Files.Count}...", CalculateRestoreOverallPercentage(completedBytes, totalBytes), false));
 
-                    await RestoreSingleSqlFileAsync(
+                    hadErrors |= await RestoreSingleSqlFileAsync(
                         cliPaths.MysqlPath!,
                         tempDefaultsFile,
                         profile,
@@ -226,6 +247,7 @@ namespace DevSAK.Services
                         currentFile,
                         disableForeignKeyChecks,
                         shouldRecreateDatabase,
+                        settings.RestoreOptions,
                         restoreIndex,
                         sqlFiles.Files.Count,
                         completedBytes,
@@ -236,8 +258,10 @@ namespace DevSAK.Services
                     completedBytes += currentFile.Length;
                 }
 
-                progress?.Report(MySqlOperationUpdate.CreateStatus("Concluído com sucesso", 100, false));
-                progress?.Report(MySqlOperationUpdate.Log("Importação finalizada com sucesso."));
+                progress?.Report(MySqlOperationUpdate.CreateStatus(hadErrors ? "Concluído com erros" : "Concluído com sucesso", 100, false));
+                progress?.Report(MySqlOperationUpdate.Log(hadErrors ? "Importação concluída com erros." : "Importação finalizada com sucesso."));
+                return hadErrors;
+                } finally { TryDeleteDirectory(preparedFolder); }
             }
             finally
             {
@@ -246,7 +270,21 @@ namespace DevSAK.Services
             }
         }
 
-        private async Task RestoreSingleSqlFileAsync(
+        public async Task<(System.Collections.Generic.List<string> Files, string Summary)> AnalyzeRestoreAsync(string source, MySqlRestoreOptions options, CancellationToken token)
+        {
+            var set = await ResolveRestoreSqlFilesAsync(new FileInfo(source), null, token);
+            var findings = new Dictionary<string, int>();
+            var temp = Path.GetTempFileName();
+            try
+            {
+                foreach (var file in set.Files)
+                    await Task.Run(() => MySqlRestoreScript.Process(file.FullName, temp, options, "destino", false, message => { findings[message] = findings.GetValueOrDefault(message) + 1; }, token), token);
+                return (set.Files.Select(f => GetRestoreDisplayName(f, set.TempFolder)).ToList(), string.Join(Environment.NewLine, findings.Select(f => $"{f.Key}: {f.Value}")));
+            }
+            finally { TryDeleteFile(temp); TryDeleteDirectory(set.TempFolder); }
+        }
+
+        private async Task<bool> RestoreSingleSqlFileAsync(
             string mysqlPath,
             string tempDefaultsFile,
             MySqlConnectionProfile profile,
@@ -254,6 +292,7 @@ namespace DevSAK.Services
             FileInfo sourceFileInfo,
             bool disableForeignKeyChecks,
             bool recreateDatabaseBeforeRestore,
+            MySqlRestoreOptions restoreOptions,
             int currentFileIndex,
             int totalFiles,
             long completedBytesBeforeFile,
@@ -276,7 +315,7 @@ namespace DevSAK.Services
                 progress?.Report(MySqlOperationUpdate.CreateStatus("Preparando restauração...", Math.Max(10, CalculateRestoreOverallPercentage(completedBytesBeforeFile, totalBytes)), false));
             }
 
-            var arguments = BuildMysqlRestoreArguments(tempDefaultsFile, database);
+            var arguments = BuildMysqlRestoreArguments(tempDefaultsFile, database) + (restoreOptions.ContinueOnError ? " --force" : "");
             progress?.Report(MySqlOperationUpdate.Log($"Comando: mysql.exe {arguments}"));
             progress?.Report(MySqlOperationUpdate.Log("Iniciando processo mysql.exe..."));
             progress?.Report(MySqlOperationUpdate.CreateStatus("Iniciando processo mysql.exe...", Math.Max(12, CalculateRestoreOverallPercentage(completedBytesBeforeFile, totalBytes)), false));
@@ -360,11 +399,13 @@ namespace DevSAK.Services
                 throw;
             }
 
-            if (process.ExitCode != 0)
+            if (process.ExitCode != 0 || (restoreOptions.ContinueOnError && stderrBuffer.ToString().Contains("ERROR", StringComparison.OrdinalIgnoreCase)))
             {
                 progress?.Report(MySqlOperationUpdate.Log($"Restauração encerrada com falha. Código de saída: {process.ExitCode}."));
+                if (restoreOptions.ContinueOnError) return true;
                 throw CreateRestoreFailureException(process.ExitCode, stderrBuffer);
             }
+            return false;
         }
 
         private static async Task RunBackupHeartbeatAsync(
@@ -566,16 +607,6 @@ namespace DevSAK.Services
                 progress?.Report(MySqlOperationUpdate.Log($"Falha ao enviar dados para o mysql.exe: {ex.Message}"));
                 throw;
             }
-        }
-
-        private static string BuildMysqldumpArguments(string defaultsFile, string database, string outputFilePath)
-        {
-            return $"--defaults-extra-file={Quote(defaultsFile)} --single-transaction --routines --events --triggers --hex-blob --verbose --result-file={Quote(outputFilePath)} --databases {Quote(database)}";
-        }
-
-        private static string BuildMysqlPumpArguments(string defaultsFile, string database)
-        {
-            return $"--defaults-extra-file={Quote(defaultsFile)} --routines --events --triggers --default-parallelism=2 --databases {Quote(database)}";
         }
 
         private static string BuildMysqlRestoreArguments(string defaultsFile, string database)

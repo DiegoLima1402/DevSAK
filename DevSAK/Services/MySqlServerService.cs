@@ -69,6 +69,18 @@ namespace DevSAK.Services
             return databases;
         }
 
+        public async Task<IReadOnlyList<string>> ListBackupTablesAsync(MySqlConnectionProfile profile, string database, CancellationToken cancellationToken)
+        {
+            var tables = new List<string>();
+            await using var connection = new MySqlConnection(BuildConnectionString(profile, database));
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using var command = new MySqlCommand("SHOW FULL TABLES;", connection);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) tables.Add(reader.GetString(0));
+            tables.Sort(StringComparer.OrdinalIgnoreCase);
+            return tables;
+        }
+
         public async Task<int> EstimateTableCountAsync(MySqlConnectionProfile profile, string database, CancellationToken cancellationToken)
         {
             await using var connection = new MySqlConnection(BuildConnectionString(profile, "information_schema"));

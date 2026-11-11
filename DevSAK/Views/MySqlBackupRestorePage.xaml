@@ -201,6 +201,49 @@
                                                    FontSize="12"
                                                    Foreground="{ThemeResource ApplicationSubTextBrush}" />
                                     </StackPanel>
+                                    <StackPanel Spacing="8" Margin="0,-8,0,0">
+                                        <TextBlock Text="Conteúdo do backup" FontSize="13" FontWeight="SemiBold" />
+                                        <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding BackupOptions.ContentIndex, Mode=TwoWay}">
+                                            <ComboBoxItem Content="Estrutura e dados" />
+                                            <ComboBoxItem Content="Somente estrutura" />
+                                            <ComboBoxItem Content="Somente dados (objetos adicionais conforme seleção abaixo)" />
+                                        </ComboBox>
+                                        <CheckBox Content="Incluir criação e seleção do banco original" IsChecked="{Binding BackupOptions.IncludeDatabase, Mode=TwoWay}" ToolTipService.ToolTip="Inclui CREATE DATABASE e USE. Desmarque para restaurar em um banco com outro nome." />
+                                        <TextBlock Text="Desmarcado: o script usa o banco escolhido na restauração. Referências explícitas em views e rotinas não são alteradas; DEFINER mantém o usuário de origem." TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <StackPanel><CheckBox Content="Procedures e functions" IsChecked="{Binding BackupOptions.IncludeRoutines, Mode=TwoWay}" /><CheckBox Content="Eventos agendados" IsChecked="{Binding BackupOptions.IncludeEvents, Mode=TwoWay}" /></StackPanel>
+                                            <StackPanel Grid.Column="1"><CheckBox Content="Triggers" IsChecked="{Binding BackupOptions.IncludeTriggers, Mode=TwoWay}" /><CheckBox Content="DROP TABLE antes de recriar" IsChecked="{Binding BackupOptions.DropTables, Mode=TwoWay}" ToolTipService.ToolTip="Não se aplica ao modo somente dados. Desmarcar não mescla tabelas existentes automaticamente." /></StackPanel>
+                                        </Grid>
+                                        <Expander Header="Tabelas e views" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="Todas são incluídas por padrão. Carregue a lista para escolher; recarregar seleciona todas. Rotinas e eventos seguem as opções acima." TextWrapping="Wrap" FontSize="12" />
+                                                <Button Content="Carregar / redefinir seleção" Click="LoadBackupTablesButton_Click" />
+                                                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl ItemsSource="{Binding BackupTables}">
+                                                        <ItemsControl.ItemTemplate><DataTemplate>
+                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsIncluded, Mode=TwoWay}" />
+                                                        </DataTemplate></ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </StackPanel>
+                                        </Expander>
+                                        <Expander Header="Opções avançadas" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Spacing="8">
+                                                <CheckBox Content="Adicionar LOCK TABLES no script" IsChecked="{Binding BackupOptions.AddLocks, Mode=TwoWay}" ToolTipService.ToolTip="Bloqueios durante a importação. O usuário de destino precisa ter permissão." />
+                                                <CheckBox Content="INSERTs com nomes das colunas" IsChecked="{Binding BackupOptions.CompleteInsert, Mode=TwoWay}" />
+                                                <CheckBox Content="Agrupar registros nos INSERTs" IsChecked="{Binding BackupOptions.ExtendedInsert, Mode=TwoWay}" ToolTipService.ToolTip="Recomendado para reduzir o tamanho do arquivo e acelerar a importação." />
+                                                <CheckBox Content="Incluir informações de tablespaces" IsChecked="{Binding BackupOptions.IncludeTablespaces, Mode=TwoWay}" />
+                                                <TextBlock Text="Metadados de replicação (GTID)" FontSize="13" />
+                                                <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding BackupOptions.GtidIndex, Mode=TwoWay}">
+                                                    <ComboBoxItem Content="Automático (padrão do MySQL)" />
+                                                    <ComboBoxItem Content="Incluir" />
+                                                    <ComboBoxItem Content="Omitir (migração entre ambientes)" />
+                                                </ComboBox>
+                                                <TextBlock Text="Charset, fuso horário, dados binários em hexadecimal e snapshot transacional são preservados automaticamente." FontSize="12" TextWrapping="Wrap" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                            </StackPanel>
+                                        </Expander>
+                                    </StackPanel>
                                 </StackPanel>
 
                                 <Grid ColumnSpacing="12">
@@ -398,7 +441,7 @@
                                     <TextBlock Text="Restauração" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
 
-                                <StackPanel x:Name="RestoreInputsPanel" Spacing="20">
+                                <StackPanel x:Name="RestoreInputsPanel" Spacing="12">
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="Selecionar arquivo SQL:" FontWeight="Medium" FontSize="13" Foreground="{ThemeResource ApplicationSubTextBrush}"/>
                                         <Grid ColumnSpacing="8">
@@ -413,6 +456,34 @@
                                         </Grid>
                                     </StackPanel>
 
+                                    <StackPanel Spacing="6">
+                                    <CheckBox Content="Ignorar seleção de banco do script (USE)" IsChecked="{Binding RestoreOptions.IgnoreUse, Mode=TwoWay}" />
+                                    <CheckBox Content="Ignorar CREATE / DROP DATABASE do script" IsChecked="{Binding RestoreOptions.IgnoreDatabaseDdl, Mode=TwoWay}" />
+                                    <CheckBox Content="Criar banco de destino se não existir" IsChecked="{Binding RestoreOptions.CreateDatabase, Mode=TwoWay}" />
+                                    <TextBlock Text="Referências explícitas a outros bancos exigem revisão. Estes filtros não isolam a execução SQL." TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    <Expander Header="Análise e arquivos do backup" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <StackPanel Spacing="8">
+                                    <Button Content="Analisar backup" Click="AnalyzeRestoreButton_Click" />
+                                    <TextBlock Text="{Binding RestoreAnalysis}" TextWrapping="Wrap" FontSize="12" MaxHeight="150" />
+                                    <TextBlock Text="Selecione os arquivos e use as setas para ajustar a ordem." FontSize="12" />
+                                    <ListView x:Name="RestoreFilesList" ItemsSource="{Binding RestoreFiles}" MaxHeight="180" SelectionMode="Single">
+                                    <ListView.ItemTemplate><DataTemplate><CheckBox Content="{Binding Name}" IsChecked="{Binding IsIncluded, Mode=TwoWay}" /></DataTemplate></ListView.ItemTemplate>
+                                    </ListView>
+                                    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="Subir" Click="RestoreFileUp_Click" /><Button Content="Descer" Click="RestoreFileDown_Click" /></StackPanel>
+                                    </StackPanel></Expander>
+                                    <Expander Header="Opções avançadas" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <StackPanel Spacing="6">
+                                    <CheckBox Content="Remapear referências qualificadas do banco de origem" IsChecked="{Binding RestoreOptions.RemapDatabase, Mode=TwoWay}" />
+                                    <TextBox Header="Banco de origem (nome exato)" Text="{Binding RestoreOptions.SourceDatabase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox Content="Remover DEFINER explícito (altera o definidor dos objetos)" IsChecked="{Binding RestoreOptions.RemoveDefiner, Mode=TwoWay}" />
+                                    <CheckBox Content="Ignorar configuração GTID_PURGED" IsChecked="{Binding RestoreOptions.IgnoreGtid, Mode=TwoWay}" />
+                                    <CheckBox Content="Ignorar LOCK / UNLOCK TABLES" IsChecked="{Binding RestoreOptions.IgnoreLocks, Mode=TwoWay}" />
+                                    <CheckBox Content="Continuar após erros e registrá-los" IsChecked="{Binding RestoreOptions.ContinueOnError, Mode=TwoWay}" />
+                                    <CheckBox Content="Salvar relatório da restauração" IsChecked="{Binding RestoreOptions.SaveReport, Mode=TwoWay}" />
+                                    <ComboBox Header="Codificação do arquivo (BOM tem prioridade)" HorizontalAlignment="Stretch" SelectedIndex="{Binding RestoreOptions.EncodingIndex, Mode=TwoWay}"><ComboBoxItem Content="UTF-8" /><ComboBoxItem Content="Latin-1" /><ComboBoxItem Content="UTF-16 LE" /></ComboBox>
+                                    <TextBlock Text="Continuar após erros pode deixar dados parcialmente importados. Remapeamento altera identificadores qualificados; revise aliases com o mesmo nome da origem." TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    </StackPanel></Expander>
+                                    </StackPanel>
                                     <CheckBox x:Name="ForeignKeyChecksOption"
                                               Content="Ignorar verificação de chaves estrangeiras (Foreign Keys)"
                                               IsChecked="{Binding DisableForeignKeyChecks, Mode=TwoWay}" />

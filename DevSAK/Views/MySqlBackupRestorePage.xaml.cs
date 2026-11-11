@@ -304,10 +304,30 @@ namespace DevSAK.Views
             }
         }
 
+        private async void LoadBackupTablesButton_Click(object sender, RoutedEventArgs e)
+        {
+            try { await _viewModel.LoadBackupTablesAsync(); }
+            catch (Exception ex) { await ShowInfoDialogAsync("Falha ao carregar tabelas", ex.Message); }
+        }
+
         private async void BackupStartButton_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.Mode = MySqlBackupRestoreMode.Backup;
             await ExecuteStartAsync();
+        }
+
+        private async void AnalyzeRestoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            try { await _viewModel.AnalyzeRestoreAsync(); }
+            catch (Exception ex) { await ShowInfoDialogAsync("Falha ao analisar", ex.Message); }
+        }
+        private void RestoreFileUp_Click(object sender, RoutedEventArgs e) => MoveRestoreFile(-1);
+        private void RestoreFileDown_Click(object sender, RoutedEventArgs e) => MoveRestoreFile(1);
+        private void MoveRestoreFile(int delta)
+        {
+            var index = RestoreFilesList.SelectedIndex;
+            if (index >= 0 && index + delta >= 0 && index + delta < _viewModel.RestoreFiles.Count)
+            { _viewModel.RestoreFiles.Move(index, index + delta); RestoreFilesList.SelectedIndex = index + delta; }
         }
 
         private async void RestoreStartButton_Click(object sender, RoutedEventArgs e)
