@@ -25,7 +25,7 @@
   #error Missing Installer\Redist\MicrosoftEdgeWebview2Setup.exe (WebView2 Evergreen Bootstrapper).
 #endif
 
-; FileVersion is 1.3.1.0; user-visible AppVersion is the semantic 1.3.1.
+; FileVersion is 1.3.3.0; user-visible AppVersion is the semantic 1.3.3.
 #define VerMajor
 #define VerMinor
 #define VerRev
@@ -43,7 +43,9 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
+AppUpdatesURL=https://github.com/DiegoLima1402/DevSAK/releases
+AppMutex=Local\DevSAK.Running
+SetupMutex=Local\DevSAK.Setup
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
@@ -99,8 +101,38 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDi
 [Run]
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Instalando o Microsoft Edge WebView2 Runtime..."; Flags: waituntilterminated skipifdoesntexist; Check: not IsWebView2RuntimeInstalled
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#DoubleAmp(MyAppName)}}"; Flags: nowait postinstall skipifsilent
+; Update handoff explicitly relaunches the app, including in silent mode.
+Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Flags: nowait skipifnotsilent; Check: IsDevSAKUpdate
 
 [Code]
+function IsDevSAKUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:DEVSAKUPDATE|0}') = '1';
+end;
+
+function InitializeSetup: Boolean;
+var
+  Attempts: Integer;
+begin
+  Result := True;
+  if not IsDevSAKUpdate then
+    Exit;
+
+  { The app launches Setup before exiting. Wait for every instance to exit;
+    never terminate an instance that may be running a backup or restore. }
+  Attempts := 0;
+  while CheckForMutexes('Local\DevSAK.Running') and (Attempts < 300) do
+  begin
+    Sleep(100);
+    Attempts := Attempts + 1;
+  end;
+  if CheckForMutexes('Local\DevSAK.Running') then
+  begin
+    MsgBox('Feche todas as instâncias do DevSAK e tente atualizar novamente.', mbError, MB_OK);
+    Result := False;
+  end;
+end;
+
 function IsWebView2RuntimeInstalled: Boolean;
 var
   Version: String;

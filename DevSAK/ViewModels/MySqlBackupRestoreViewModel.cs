@@ -168,6 +168,7 @@ namespace DevSAK.ViewModels
                 }
 
                 _isCreatingDatabase = value;
+                OperationActivity.SetBusy(this, _isBusy || _isCreatingDatabase);
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanCreateDatabase));
             }
@@ -354,6 +355,7 @@ namespace DevSAK.ViewModels
                 }
 
                 _isBusy = value;
+                OperationActivity.SetBusy(this, _isBusy || _isCreatingDatabase);
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsIdle));
             }
@@ -1109,6 +1111,8 @@ namespace DevSAK.ViewModels
                 return new MySqlBackupRestoreSettings();
             }
         }
+
+        public Task SavePreferencesForUpdateAsync() => SaveSettingsAsync();
 
         private async Task SaveSettingsAsync()
         {

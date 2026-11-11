@@ -77,7 +77,20 @@
             </ResourceDictionary>
         </Grid.Resources>
 
-        <ScrollViewer x:Name="HomeScrollViewer" Padding="0,0,0,40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="12,8,12,0">
+            <InfoBar x:Name="UpdateInfoBar" IsOpen="False" IsClosable="True">
+                <InfoBar.ActionButton>
+                    <Button x:Name="UpdateActionButton" Click="UpdateActionButton_Click" Content="Ver atualização" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <ProgressBar x:Name="UpdateProgress" Minimum="0" Maximum="100" Visibility="Collapsed" Margin="0,4,0,4" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" x:Name="HomeScrollViewer" Padding="0,0,0,40">
             <StackPanel MaxWidth="1000" HorizontalAlignment="Center" Spacing="40" Margin="40,40,40,0">
 
                 <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -255,7 +268,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Frame x:Name="AppFrame" Visibility="Collapsed" Navigated="AppFrame_Navigated">
+        <Frame Grid.Row="1" x:Name="AppFrame" Visibility="Collapsed" Navigated="AppFrame_Navigated">
             <Frame.ContentTransitions>
                 <TransitionCollection>
                     <NavigationThemeTransition>
@@ -265,7 +278,11 @@
             </Frame.ContentTransitions>
         </Frame>
 
-        <Button x:Name="ThemeToggleButton" 
+        <Button x:Name="CheckUpdatesButton" Grid.Row="1" Content="Verificar atualizações"
+                Click="CheckUpdatesButton_Click" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,7,60,0" ToolTipService.ToolTip="Consultar novas versões no GitHub" />
+
+        <Button Grid.Row="1" x:Name="ThemeToggleButton"
                 Click="ThemeToggleButton_Click"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Right" 
@@ -276,7 +293,7 @@
             <FontIcon x:Name="ThemeToggleIcon" Glyph="&#xE706;" FontFamily="Segoe Fluent Icons" FontSize="18" />
         </Button>
 
-        <TextBlock x:Name="VersionTextBlock"
+        <TextBlock Grid.Row="1" x:Name="VersionTextBlock"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Bottom"
                    Margin="0,0,16,12"
@@ -285,7 +302,7 @@
                    Opacity="0.9"
                    IsHitTestVisible="False" />
 
-        <TextBlock x:Name="AuthorTextBlock"
+        <TextBlock Grid.Row="1" x:Name="AuthorTextBlock"
            HorizontalAlignment="Left"
            VerticalAlignment="Bottom"
            Margin="12,0,0,12"

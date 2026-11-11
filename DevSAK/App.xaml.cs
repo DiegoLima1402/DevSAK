@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -28,6 +28,8 @@ namespace DevSAK
     public partial class App : Application
     {
         private Window? _window;
+        // Kept alive until process exit so Setup can wait for every instance.
+        private readonly System.Threading.Mutex _runningMutex = new(false, DevSAK.Services.UpdateInstallerService.AppMutexName);
 
         /// <summary>
         /// Gets the main application window.

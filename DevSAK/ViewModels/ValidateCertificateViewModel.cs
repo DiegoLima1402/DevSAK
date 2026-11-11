@@ -65,6 +65,7 @@ namespace DevSAK.ViewModels
                 if (_isProcessing != value)
                 {
                     _isProcessing = value;
+                    OperationActivity.SetBusy(this, value);
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IsNotProcessing));
                     OnPropertyChanged(nameof(CanRun));

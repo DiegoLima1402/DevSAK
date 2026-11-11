@@ -129,6 +129,7 @@ namespace DevSAK.ViewModels
             {
                 if (SetProperty(ref _isBusy, value))
                 {
+                    OperationActivity.SetBusy(this, value);
                     OnPropertyChanged(nameof(CanTest));
                     OnPropertyChanged(nameof(CanCancel));
                 }

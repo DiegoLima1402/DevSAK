@@ -54,6 +54,7 @@ namespace DevSAK
             {
                 _releaseNotesChecked = true;
                 await ShowReleaseNotesIfNeededAsync();
+                StartUpdateChecks();
             }
         }
 

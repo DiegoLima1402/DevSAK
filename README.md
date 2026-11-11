@@ -7,7 +7,7 @@
 
 **DevSAK** (*Developer Swiss Army Knife*) é uma suíte desktop para Windows com utilitários do dia a dia de desenvolvimento: compactação ZIP, certificados, backup/restauração MySQL e teste SMTP.
 
-Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interface em Mica e ferramentas CLI embarcadas. Versão atual do projeto: **1.3.1**.
+Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interface em Mica e ferramentas CLI embarcadas. Versão atual do projeto: **1.3.3**.
 
 ---
 
@@ -154,10 +154,27 @@ dotnet publish .\DevSAK\DevSAK.csproj -c Release -p:Platform=x64 -p:PublishProfi
 O diretório `Installer/` contém o script Inno Setup e os arquivos de apoio (`LICENSE.txt`, `INFO_BEFORE.txt`, `INFO_AFTER.txt`, ícone, bootstrapper do WebView2).
 
 - O setup instala o **conteúdo** de `publish` para o usuário atual (`%LocalAppData%\Programs\DevSAK`).
-- A saída gerada (`Installer/output/`, por exemplo `DevSAK_Installer_v1.3.1.exe`) não deve ser commitada (está no `.gitignore`).
+- A saída gerada (`Installer/output/`, por exemplo `DevSAK_Installer_v1.3.3.exe`) não deve ser commitada (está no `.gitignore`).
 - Detalhes para quem mantém o instalador: `Installer/README.md`.
 
 ---
+
+## Atualizações automáticas
+
+A partir da versão 1.3.3, o aplicativo consulta as Releases públicas do GitHub ao
+abrir e a cada quatro horas enquanto estiver aberto. O botão **Verificar
+atualizações** permite consultar manualmente. O aviso mostra versão, tamanho e
+notas da Release; o usuário autoriza o download, acompanha o progresso e pode
+cancelá-lo. Depois, **Instalar e reiniciar** aplica a atualização quando todas as
+ferramentas estiverem ociosas, preservando as configurações em AppData.
+
+O atualizador aceita apenas Releases estáveis com um instalador oficial x64 e
+SHA-256 válido, conferido após o download e novamente antes da execução. A
+instalação automática funciona na cópia instalada por usuário com Inno Setup;
+builds de desenvolvimento, versões portáteis, x86, ARM64 e MSIX precisam de
+atualização manual. Falhas nas consultas automáticas não interrompem o uso.
+
+Para publicar uma versão, siga [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Configurações locais
 

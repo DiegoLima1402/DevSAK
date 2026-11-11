@@ -19,8 +19,10 @@ separadamente para usar os recursos correspondentes do aplicativo.
 
 Atualizações
 ------------
-Atualizações futuras poderão ser distribuídas por meio de novas versões
-deste instalador.
+O DevSAK verifica novas versões ao abrir e a cada quatro horas enquanto
+estiver aberto. Você também pode usar "Verificar atualizações" na janela
+principal. O download exige sua autorização. A instalação é iniciada pelo
+botão "Instalar e reiniciar", depois de concluir as operações em andamento.
 
 Repositório do projeto
 ----------------------

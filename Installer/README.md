@@ -93,9 +93,13 @@ Configuração atual:
 - pastas de idioma extras do Windows App SDK removidas no publish (mantém `pt-BR` e inglês de fallback)
 - WebView2 Runtime instalado sob demanda via `Installer\Redist\MicrosoftEdgeWebview2Setup.exe`
 - saída `DevSAK_Installer_v{versão}.exe`
-- `AppVersion` visível como versão semântica (`1.3.1`), lida automaticamente de `DevSAK.exe`
+- `AppVersion` visível como versão semântica (`1.3.3`), lida automaticamente de `DevSAK.exe`
 - `AppId` estável para upgrades no mesmo diretório
 - arquivos antigos em `{app}` são substituídos na atualização; dados em AppData não são apagados
-- instâncias em execução de `DevSAK.exe` são encerradas antes de substituir arquivos
+- mutex de execução impede substituir arquivos enquanto o DevSAK 1.3.3 ou posterior estiver aberto
+- no fluxo de atualização automática, Setup aguarda até 30 segundos pelo encerramento de todas as instâncias, sem encerrá-las à força
+- `/DEVSAKUPDATE=1` com instalação silenciosa reabre o aplicativo após instalar
 
 Compile o script somente depois de publicar o Release x64 / win-x64 com o perfil acima. A saída do instalador fica em `Installer\output\`.
+
+O procedimento de publicação no GitHub Releases está em [../docs/RELEASING.md](../docs/RELEASING.md).
