@@ -27,3 +27,10 @@ botão "Instalar e reiniciar", depois de concluir as operações em andamento.
 Repositório do projeto
 ----------------------
 https://github.com/DiegoLima1402/DevSAK
+
+Compactador ZIP e uploads
+-------------------------
+Use perfis de exclusão e escolha upload para StorageTo, File.Kiwi ou FTP.
+Cadastre vários destinos FTP/FTPS com pasta remota e senha protegida.
+Em falhas de upload, tente novamente ou escolha outro destino sem recomprimir.
+A exclusão opcional do ZIP local só ocorre após o envio confirmado.

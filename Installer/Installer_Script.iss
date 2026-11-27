@@ -25,7 +25,7 @@
   #error Missing Installer\Redist\MicrosoftEdgeWebview2Setup.exe (WebView2 Evergreen Bootstrapper).
 #endif
 
-; FileVersion is 1.3.3.0; user-visible AppVersion is the semantic 1.3.3.
+; FileVersion is 1.3.4.0; user-visible AppVersion is the semantic 1.3.4.
 #define VerMajor
 #define VerMinor
 #define VerRev
@@ -46,14 +46,15 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL=https://github.com/DiegoLima1402/DevSAK/releases
 AppMutex=Local\DevSAK.Running
 SetupMutex=Local\DevSAK.Setup
-DefaultDirName={localappdata}\Programs\{#MyAppName}
+DefaultDirName={code:GetDefaultInstallDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 VersionInfoVersion={#MyAppFileVersion}
 VersionInfoProductVersion={#MyAppVersion}
 VersionInfoProductName={#MyAppName}
 VersionInfoCompany={#MyAppPublisher}
-UsePreviousAppDir=yes
+; Resolve both registry scopes explicitly and reject stale installation paths.
+UsePreviousAppDir=no
 UsePreviousLanguage=yes
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run on anything but x64 and Windows 11 on Arm.
 ArchitecturesAllowed=x64compatible
@@ -105,6 +106,48 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#DoubleAmp(M
 Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Flags: nowait skipifnotsilent; Check: IsDevSAKUpdate
 
 [Code]
+function ValidInstallDir(const Directory: String): Boolean;
+begin
+  Result := (Directory <> '') and
+    FileExists(AddBackslash(Directory) + '{#MyAppExeName}');
+end;
+
+function ReadInstallDir(RootKey: Integer; var Directory: String): Boolean;
+begin
+  Result := RegQueryStringValue(RootKey,
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{B115A936-DE0A-48D3-8B42-E13296D49F1A}_is1',
+    'InstallLocation', Directory);
+  if Result then
+  begin
+    Directory := RemoveQuotes(Trim(Directory));
+    Result := ValidInstallDir(Directory);
+  end;
+end;
+
+function GetDefaultInstallDir(Param: String): String;
+var
+  Directory: String;
+begin
+  { Prefer the current user's registered installation, then machine installs. }
+  if ReadInstallDir(HKCU64, Directory) or ReadInstallDir(HKCU32, Directory) or
+     ReadInstallDir(HKLM64, Directory) or ReadInstallDir(HKLM32, Directory) then
+  begin
+    Result := Directory;
+    Exit;
+  end;
+
+  { Also recognize installations whose uninstall registration was lost. }
+  Directory := ExpandConstant('{localappdata}\Programs\{#MyAppName}');
+  if not ValidInstallDir(Directory) then
+    Directory := ExpandConstant('{commonpf64}\{#MyAppName}');
+  if not ValidInstallDir(Directory) then
+    Directory := ExpandConstant('{commonpf32}\{#MyAppName}');
+  if ValidInstallDir(Directory) then
+    Result := Directory
+  else
+    Result := ExpandConstant('{localappdata}\Programs\{#MyAppName}');
+end;
+
 function IsDevSAKUpdate: Boolean;
 begin
   Result := ExpandConstant('{param:DEVSAKUPDATE|0}') = '1';

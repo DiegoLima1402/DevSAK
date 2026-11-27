@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../DevSAK/Services/ExplorerFolderService.cs" Link="ExplorerFolderService.cs" />
+    <Compile Include="../../DevSAK/Models/AppZip*.cs" Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../../DevSAK/Models/ZipCandidateFile.cs" Link="ZipCandidateFile.cs" />
+    <Compile Include="../../DevSAK/Models/FtpDestination.cs" Link="FtpDestination.cs" />
+    <Compile Include="../../DevSAK/Services/AppZip*.cs" Link="Services/%(Filename)%(Extension)" />
+    <Compile Include="../../DevSAK/Services/OperationActivity.cs" Link="OperationActivity.cs" />
+    <Compile Include="../../DevSAK/ViewModels/AppZipViewModel.cs" Link="AppZipViewModel.cs" />
+    <Compile Include="../../DevSAK/ViewModels/AppZipViewModel.Upload.cs" Link="AppZipViewModel.Upload.cs" />
+  </ItemGroup>
+</Project>

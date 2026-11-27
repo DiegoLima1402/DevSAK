@@ -81,8 +81,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Margin="12,8,12,0">
-            <InfoBar x:Name="UpdateInfoBar" IsOpen="False" IsClosable="True">
+        <StackPanel x:Name="UpdateNotificationPanel" Grid.Row="0" Margin="12,8,12,0" Visibility="Collapsed">
+            <InfoBar x:Name="UpdateInfoBar" IsOpen="False" IsClosable="True" Closed="UpdateInfoBar_Closed">
                 <InfoBar.ActionButton>
                     <Button x:Name="UpdateActionButton" Click="UpdateActionButton_Click" Content="Ver atualização" />
                 </InfoBar.ActionButton>
@@ -278,9 +278,19 @@
             </Frame.ContentTransitions>
         </Frame>
 
-        <Button x:Name="CheckUpdatesButton" Grid.Row="1" Content="Verificar atualizações"
+        <Button x:Name="CheckUpdatesButton" Grid.Row="1"
                 Click="CheckUpdatesButton_Click" HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="0,7,60,0" ToolTipService.ToolTip="Consultar novas versões no GitHub" />
+                Margin="0,7,113,0" Width="44" Height="44" CornerRadius="22"
+                AutomationProperties.Name="Verificar Atualizações" ToolTipService.ToolTip="Verificar Atualizações">
+            <FontIcon Glyph="&#xE895;" FontFamily="Segoe Fluent Icons" FontSize="18" />
+        </Button>
+
+        <Button Grid.Row="1" x:Name="SettingsButton" Click="SettingsButton_Click"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,60,0"
+                Width="44" Height="44" CornerRadius="22"
+                AutomationProperties.Name="Configurações" ToolTipService.ToolTip="Configurações">
+            <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons" FontSize="18" />
+        </Button>
 
         <Button Grid.Row="1" x:Name="ThemeToggleButton"
                 Click="ThemeToggleButton_Click"

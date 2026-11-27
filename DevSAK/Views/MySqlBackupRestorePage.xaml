@@ -261,8 +261,7 @@
                                             </Grid.ColumnDefinitions>
                                             <ProgressBar Grid.Column="0"
                                                          Value="{Binding ProgressValue}"
-                                                         IsIndeterminate="{Binding IsProgressIndeterminate}"
-                                                         Height="4" />
+                                                         IsIndeterminate="{Binding IsProgressIndeterminate}" />
                                             <TextBlock Grid.Column="1"
                                                        Text="{Binding ProgressText}"
                                                        VerticalAlignment="Center"
@@ -507,8 +506,7 @@
                                             </Grid.ColumnDefinitions>
                                             <ProgressBar Grid.Column="0"
                                                          Value="{Binding ProgressValue}"
-                                                         IsIndeterminate="{Binding IsProgressIndeterminate}"
-                                                         Height="4" />
+                                                         IsIndeterminate="{Binding IsProgressIndeterminate}" />
                                             <TextBlock Grid.Column="1"
                                                        Text="{Binding ProgressText}"
                                                        VerticalAlignment="Center"

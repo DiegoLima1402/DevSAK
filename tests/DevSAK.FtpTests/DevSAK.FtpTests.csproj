@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentFTP" Version="55.1.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <Compile Include="../../DevSAK/Models/FtpDestination.cs" Link="FtpDestination.cs" />
+    <Compile Include="../../DevSAK/Services/Ftp*.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="../../DevSAK/Services/ProtectedSettingsService.cs" Link="ProtectedSettingsService.cs" />
+  </ItemGroup>
+</Project>

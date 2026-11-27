@@ -82,12 +82,20 @@ public sealed partial class MainWindow
 
     private void ShowUpdateMessage(string title, string message, InfoBarSeverity severity, string? action = null)
     {
+        UpdateNotificationPanel.Visibility = Visibility.Visible;
         UpdateInfoBar.Title = title;
         UpdateInfoBar.Message = message;
         UpdateInfoBar.Severity = severity;
         UpdateInfoBar.IsOpen = true;
         UpdateActionButton.Content = action ?? "";
         UpdateActionButton.Visibility = action == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        UpdateNotificationPanel.Visibility = UpdateInfoBar.IsOpen || UpdateProgress.Visibility == Visibility.Visible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private async void UpdateActionButton_Click(object sender, RoutedEventArgs e)

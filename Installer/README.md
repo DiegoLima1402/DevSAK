@@ -68,6 +68,7 @@ As licenças das bibliotecas ficam nos pacotes NuGet restaurados, não no códig
 Referência das dependências diretas atuais do projeto:
 
 - **MailKit / MimeKit** — usadas para SMTP; o MailKit puxa **BouncyCastle** de forma transitiva.
+- **FluentFTP** — conexão, listagem e upload FTP/FTPS.
 - **MySqlConnector**
 - **CommunityToolkit.WinUI.Controls.Segmented**
 - **Microsoft.WindowsAppSDK** e **Microsoft.Windows.SDK.BuildTools**
@@ -93,7 +94,7 @@ Configuração atual:
 - pastas de idioma extras do Windows App SDK removidas no publish (mantém `pt-BR` e inglês de fallback)
 - WebView2 Runtime instalado sob demanda via `Installer\Redist\MicrosoftEdgeWebview2Setup.exe`
 - saída `DevSAK_Installer_v{versão}.exe`
-- `AppVersion` visível como versão semântica (`1.3.3`), lida automaticamente de `DevSAK.exe`
+- `AppVersion` visível como versão semântica (`1.3.4`), lida automaticamente de `DevSAK.exe`
 - `AppId` estável para upgrades no mesmo diretório
 - arquivos antigos em `{app}` são substituídos na atualização; dados em AppData não são apagados
 - mutex de execução impede substituir arquivos enquanto o DevSAK 1.3.3 ou posterior estiver aberto

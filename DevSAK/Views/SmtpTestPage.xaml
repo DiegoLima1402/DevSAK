@@ -205,8 +205,7 @@
                                                    Foreground="{ThemeResource ApplicationAccentBrush}" />
                                     </Grid>
 
-                                    <ProgressBar Value="{Binding Progress}"
-                                                 Height="6" />
+                                    <ProgressBar Value="{Binding Progress}" />
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">

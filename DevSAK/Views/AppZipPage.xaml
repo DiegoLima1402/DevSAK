@@ -1,68 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Page
-    x:Class="DevSAK.Views.AppZipPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationBackgroundBrush}">
-
+<Page x:Class="DevSAK.Views.AppZipPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:converters="using:DevSAK.Converters" mc:Ignorable="d" Background="{ThemeResource ApplicationBackgroundBrush}">
     <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <Style x:Key="SectionCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource ApplicationTileBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource ApplicationBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="20" />
-            <Setter Property="Margin" Value="0,0,0,16" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="Margin" Value="0" />
         </Style>
-
         <Style TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
         </Style>
     </Page.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
         <Border Grid.Row="0" Padding="24,12" BorderBrush="{ThemeResource ApplicationBorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
-                <Button x:Name="BackButton"
-                        Click="BackButton_Click"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Padding="8"
-                        HorizontalAlignment="Left">
+                <Button x:Name="BackButton" IsEnabled="{Binding CanNavigate}" Click="BackButton_Click" Background="Transparent" BorderThickness="0" Padding="8" HorizontalAlignment="Left">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE72B;" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                        <FontIcon Glyph="" FontSize="14" FontFamily="Segoe Fluent Icons" />
                         <TextBlock Text="Voltar" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                    <FontIcon Glyph="&#xF012;" Foreground="{ThemeResource ApplicationAccentBrush}" FontFamily="Segoe Fluent Icons" />
+                    <FontIcon Glyph="" Foreground="{ThemeResource ApplicationAccentBrush}" FontFamily="Segoe Fluent Icons" />
                     <TextBlock Text="Compactador (ZIP)" FontWeight="Bold" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>
-
-        <ScrollViewer Grid.Row="1" Padding="24">
-            <StackPanel HorizontalAlignment="Center" MaxWidth="1200" Spacing="24">
-
-                <Grid ColumnSpacing="24">
+        <Grid x:Name="Workspace" Grid.Row="1" Padding="24" ColumnSpacing="24" RowSpacing="16" SizeChanged="Workspace_SizeChanged">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="2*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ScrollViewer x:Name="EditorScroll" IsEnabled="{Binding IsNotProcessing}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" SizeChanged="EditorScroll_SizeChanged">
+                <Grid x:Name="EditorGrid" ColumnSpacing="24" RowSpacing="16">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.5*" />
-                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="3*" />
                     </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Configurações de Pacote" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16" />
-                        <Border Style="{StaticResource SectionCardStyle}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="PackageSection" Spacing="16">
+                        <Border Visibility="{Binding IsNormalView, Converter={StaticResource BoolToVisibilityConverter}}" Style="{StaticResource SectionCardStyle}">
                             <StackPanel Spacing="20">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}" />
+                                    <TextBlock Text="Configurações do pacote" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="Diretório de Origem" FontWeight="SemiBold" />
                                     <Grid ColumnSpacing="8">
@@ -70,13 +66,12 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Text="{Binding SourceDirectory, Mode=TwoWay}" PlaceholderText="C:\Caminho\Para\Publish" />
+                                        <TextBox Text="{Binding SourceDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{Binding SourceDirectory}" PlaceholderText="C:\Caminho\Para\Publish" />
                                         <Button Grid.Column="1" Click="BrowseSourceButton_Click">
-                                            <FontIcon Glyph="&#xED25;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                            <FontIcon Glyph="" FontSize="16" FontFamily="Segoe Fluent Icons" />
                                         </Button>
                                     </Grid>
                                 </StackPanel>
-
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="Diretório de Destino" FontWeight="SemiBold" />
                                     <Grid ColumnSpacing="8">
@@ -84,131 +79,258 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Text="{Binding DestinationDirectory, Mode=TwoWay}" PlaceholderText="C:\Caminho\De\Saída" />
+                                        <TextBox Text="{Binding DestinationDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{Binding DestinationDirectory}" PlaceholderText="C:\Caminho\De\Saída" />
                                         <Button Grid.Column="1" Click="BrowseDestinationButton_Click">
-                                            <FontIcon Glyph="&#xED25;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                            <FontIcon Glyph="" FontSize="16" FontFamily="Segoe Fluent Icons" />
                                         </Button>
                                     </Grid>
                                 </StackPanel>
-
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="Nome do Arquivo" FontWeight="SemiBold" />
-                                    <TextBox Text="{Binding ZipName, Mode=TwoWay}" IsReadOnly="{Binding UseAutomaticZipName}" PlaceholderText="Ex: Deploy_Final" />
+                                    <TextBox Text="{Binding ZipName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding UseAutomaticZipName}" PlaceholderText="Ex: Deploy_Final" />
                                     <CheckBox Content="Nome automático com timestamp" IsChecked="{Binding UseAutomaticZipName, Mode=TwoWay}" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Filtros e Regras" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16" />
                         <Border Style="{StaticResource SectionCardStyle}">
                             <StackPanel Spacing="12">
-                                <CheckBox x:Name="DateFilterCheckBox" Content="Filtrar por data de modificação" IsChecked="{Binding UseDateFilter, Mode=TwoWay}" FontWeight="SemiBold" />
-                                <DatePicker Date="{Binding StartDateOffset, Mode=TwoWay}" IsEnabled="{Binding UseDateFilter}" HorizontalAlignment="Stretch" />
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}" />
+                                    <TextBlock Text="Opções de Upload" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <CheckBox IsChecked="{Binding DeleteZipAfterUpload, Mode=TwoWay}" Visibility="{Binding HasUploadDestination, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="Excluir o ZIP local após o upload bem-sucedido" TextWrapping="Wrap" />
+                                </CheckBox>
+                                <RadioButton Content="Não fazer upload" GroupName="ZipUploadProvider" IsChecked="{Binding IsUploadDisabled, Mode=TwoWay}" />
+                                <RadioButton Content="StorageTo" GroupName="ZipUploadProvider" IsChecked="{Binding IsStorageToSelected, Mode=TwoWay}" />
+                                <RadioButton Content="File.Kiwi" GroupName="ZipUploadProvider" IsChecked="{Binding IsFileKiwiSelected, Mode=TwoWay}" />
+                                <RadioButton Content="FTP" GroupName="ZipUploadProvider" IsChecked="{Binding IsFtpSelected, Mode=TwoWay}" />
+                                <Grid ColumnSpacing="8" Visibility="{Binding IsFtpSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox ItemsSource="{Binding FtpDestinations}" SelectedItem="{Binding SelectedFtpDestination, Mode=TwoWay}" DisplayMemberPath="DisplayName" PlaceholderText="Selecione um destino FTP" HorizontalAlignment="Stretch" AutomationProperties.Name="Destino FTP" />
+                                    <Button Grid.Column="1" Click="AddFtpDestination_Click" ToolTipService.ToolTip="Adicionar destino FTP" AutomationProperties.Name="Adicionar destino FTP">
+                                        <FontIcon Glyph="" FontSize="14" />
+                                    </Button>
+                                    <Button Grid.Column="2" IsEnabled="{Binding HasSelectedFtpDestination}" ToolTipService.ToolTip="Ações do destino FTP" AutomationProperties.Name="Ações do destino FTP">
+                                        <FontIcon Glyph="" FontSize="14" />
+                                        <Button.Flyout>
+                                            <MenuFlyout>
+                                                <MenuFlyoutItem Text="Editar" Click="EditFtpDestination_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <SymbolIcon Symbol="Edit" />
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="Excluir" Click="DeleteFtpDestination_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <SymbolIcon Symbol="Delete" />
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                </Grid>
                             </StackPanel>
                         </Border>
-
-                        <Border Style="{StaticResource SectionCardStyle}">
-                            <Pivot>
-                                <PivotItem Header="Arquivos">
-                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
-                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="IgnoredFilesInput" PlaceholderText="web.config..." KeyDown="IgnoredFilesInput_KeyDown" />
-                                            <Button Grid.Column="1" Click="AddIgnoredFileButton_Click">
-                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
-                                            </Button>
-                                        </Grid>
-                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredFilesList}" x:Name="IgnoredFilesListView" />
-                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFileButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
-                                    </Grid>
-                                </PivotItem>
-                                <PivotItem Header="Pastas">
-                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
-                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="IgnoredFoldersInput" PlaceholderText="bin, obj..." KeyDown="IgnoredFoldersInput_KeyDown" />
-                                            <Button Grid.Column="1" Click="AddIgnoredFolderButton_Click">
-                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
-                                            </Button>
-                                        </Grid>
-                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredFoldersList}" x:Name="IgnoredFoldersListView" />
-                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFolderButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
-                                    </Grid>
-                                </PivotItem>
-                                <PivotItem Header="Extensões">
-                                    <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
-                                        <Grid ColumnSpacing="4" Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="IgnoredExtensionsInput" PlaceholderText=".log..." KeyDown="IgnoredExtensionsInput_KeyDown" />
-                                            <Button Grid.Column="1" Click="AddIgnoredExtensionButton_Click">
-                                                <FontIcon Glyph="&#xE710;" FontSize="14" FontFamily="Segoe Fluent Icons" />
-                                            </Button>
-                                        </Grid>
-                                        <ListView Grid.Row="1" Height="150" ItemsSource="{Binding IgnoredExtensionsList}" x:Name="IgnoredExtensionsListView" />
-                                        <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredExtensionButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
-                                    </Grid>
-                                </PivotItem>
-                            </Pivot>
+                    </StackPanel>
+                    <Grid x:Name="RulesSection" Visibility="{Binding IsNormalView, Converter={StaticResource BoolToVisibilityConverter}}" Grid.Column="1" RowSpacing="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource SectionCardStyle}">
+                            <StackPanel Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="" FontFamily="Segoe Fluent Icons" FontSize="18" Foreground="{ThemeResource ApplicationAccentBrush}" />
+                                    <TextBlock Text="Filtro por data" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox x:Name="DateFilterCheckBox" Content="Filtrar por data de modificação" IsChecked="{Binding UseDateFilter, Mode=TwoWay}" FontWeight="SemiBold" />
+                                    <Button Grid.Column="1" Content="Hoje" Click="TodayButton_Click" VerticalAlignment="Center" Visibility="{Binding UseDateFilter, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                </Grid>
+                                <DatePicker SelectedDate="{Binding StartDateOffset, Mode=TwoWay}" IsEnabled="{Binding UseDateFilter}" HorizontalAlignment="Stretch" Visibility="{Binding UseDateFilter, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            </StackPanel>
                         </Border>
-                    </StackPanel>
+                        <Border Grid.Row="1" Style="{StaticResource SectionCardStyle}">
+                            <Grid RowSpacing="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <FontIcon Glyph="" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}" />
+                                        <TextBlock Text="Regras de exclusão" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox ItemsSource="{Binding IgnoreProfiles}" SelectedItem="{Binding SelectedIgnoreProfile, Mode=TwoWay}" DisplayMemberPath="Name" HorizontalAlignment="Stretch" IsEnabled="{Binding IsNotProcessing}" AutomationProperties.Name="Perfil de regras de exclusão" />
+                                        <Button Grid.Column="1" Click="NewProfile_Click" IsEnabled="{Binding IsNotProcessing}" ToolTipService.ToolTip="Criar novo perfil" AutomationProperties.Name="Criar novo perfil">
+                                            <FontIcon Glyph="" FontSize="14" />
+                                        </Button>
+                                        <Button Grid.Column="2" IsEnabled="{Binding IsNotProcessing}" ToolTipService.ToolTip="Ações do perfil selecionado" AutomationProperties.Name="Ações do perfil selecionado">
+                                            <FontIcon Glyph="" FontSize="14" />
+                                            <Button.Flyout>
+                                                <MenuFlyout>
+                                                    <MenuFlyoutItem Text="Renomear perfil" Click="RenameProfile_Click">
+                                                        <MenuFlyoutItem.Icon>
+                                                            <SymbolIcon Symbol="Edit" />
+                                                        </MenuFlyoutItem.Icon>
+                                                    </MenuFlyoutItem>
+                                                    <MenuFlyoutItem Text="Excluir perfil" Click="DeleteProfile_Click">
+                                                        <MenuFlyoutItem.Icon>
+                                                            <SymbolIcon Symbol="Delete" />
+                                                        </MenuFlyoutItem.Icon>
+                                                    </MenuFlyoutItem>
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Importar Perfil" Click="ImportProfile_Click" IsEnabled="{Binding IsNotProcessing}" />
+                                        <Button Content="Exportar Perfil" Click="ExportProfile_Click" IsEnabled="{Binding IsNotProcessing}" />
+                                    </StackPanel>
+                                    <TextBlock Text="Regras salvas automaticamente no perfil." FontSize="12" TextWrapping="Wrap" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                </StackPanel>
+                                <Pivot Grid.Row="1" VerticalContentAlignment="Stretch" IsEnabled="{Binding IsNotProcessing}">
+                                    <PivotItem VerticalContentAlignment="Stretch">
+                                        <PivotItem.Header>
+                                            <TextBlock FontSize="14">
+                                                <Run Text="Arquivos (" />
+                                                <Run Text="{Binding IgnoredFilesList.Count}" />
+                                                <Run Text=")" />
+                                            </TextBlock>
+                                        </PivotItem.Header>
+                                        <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                            <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="IgnoredFilesInput" PlaceholderText="web.config..." KeyDown="IgnoredFilesInput_KeyDown" />
+                                                <Button Grid.Column="1" Click="AddIgnoredFileButton_Click">
+                                                    <FontIcon Glyph="" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                                </Button>
+                                            </Grid>
+                                            <ListView Grid.Row="1" ItemsSource="{Binding IgnoredFilesList}" x:Name="IgnoredFilesListView" />
+                                            <TextBlock Grid.Row="1" Text="Nenhum arquivo ignorado." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{ThemeResource ApplicationSubTextBrush}" Visibility="{Binding HasNoIgnoredFiles, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFileButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                        </Grid>
+                                    </PivotItem>
+                                    <PivotItem VerticalContentAlignment="Stretch">
+                                        <PivotItem.Header>
+                                            <TextBlock FontSize="14">
+                                                <Run Text="Pastas (" />
+                                                <Run Text="{Binding IgnoredFoldersList.Count}" />
+                                                <Run Text=")" />
+                                            </TextBlock>
+                                        </PivotItem.Header>
+                                        <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                            <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="IgnoredFoldersInput" PlaceholderText="bin, obj..." KeyDown="IgnoredFoldersInput_KeyDown" />
+                                                <Button Grid.Column="1" Click="AddIgnoredFolderButton_Click">
+                                                    <FontIcon Glyph="" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                                </Button>
+                                            </Grid>
+                                            <ListView Grid.Row="1" ItemsSource="{Binding IgnoredFoldersList}" x:Name="IgnoredFoldersListView" />
+                                            <TextBlock Grid.Row="1" Text="Nenhuma pasta ignorada." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{ThemeResource ApplicationSubTextBrush}" Visibility="{Binding HasNoIgnoredFolders, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredFolderButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                        </Grid>
+                                    </PivotItem>
+                                    <PivotItem VerticalContentAlignment="Stretch">
+                                        <PivotItem.Header>
+                                            <TextBlock FontSize="14">
+                                                <Run Text="Extensões (" />
+                                                <Run Text="{Binding IgnoredExtensionsList.Count}" />
+                                                <Run Text=")" />
+                                            </TextBlock>
+                                        </PivotItem.Header>
+                                        <Grid RowDefinitions="Auto,*,Auto" Margin="0,10,0,0">
+                                            <Grid ColumnSpacing="4" Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="IgnoredExtensionsInput" PlaceholderText=".log..." KeyDown="IgnoredExtensionsInput_KeyDown" />
+                                                <Button Grid.Column="1" Click="AddIgnoredExtensionButton_Click">
+                                                    <FontIcon Glyph="" FontSize="14" FontFamily="Segoe Fluent Icons" />
+                                                </Button>
+                                            </Grid>
+                                            <ListView Grid.Row="1" ItemsSource="{Binding IgnoredExtensionsList}" x:Name="IgnoredExtensionsListView" />
+                                            <TextBlock Grid.Row="1" Text="Nenhuma extensão ignorada." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{ThemeResource ApplicationSubTextBrush}" Visibility="{Binding HasNoIgnoredExtensions, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <Button Grid.Row="2" Content="Remover" Click="RemoveIgnoredExtensionButton_Click" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="12" />
+                                        </Grid>
+                                    </PivotItem>
+                                </Pivot>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Grid>
-
-                <Border Style="{StaticResource SectionCardStyle}" Background="{ThemeResource ApplicationSurfaceBrush}">
-                    <StackPanel Spacing="16">
-                        <Grid>
-                            <TextBlock Text="Execução" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding ProgressPercentage, Mode=OneWay}" 
-                                       HorizontalAlignment="Right" 
-                                       Foreground="#009628" 
-                                       FontWeight="Bold" FontSize="16" />
-                        </Grid>
-
-                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Foreground="#009628" Height="8" CornerRadius="4" />
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="{Binding Status, Mode=OneWay}" 
-                                       FontSize="13" 
-                                       Foreground="{ThemeResource ApplicationSubTextBrush}" 
-                                       FontStyle="Italic" 
-                                       TextWrapping="Wrap" 
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="2" 
-                                       HorizontalAlignment="Stretch"
-                                       ToolTipService.ToolTip="{Binding Status, Mode=OneWay}" />
-                            <TextBlock Text="{Binding CurrentZipEntry, Mode=OneWay}"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource ApplicationTextBrush}"
-                                       Opacity="0.75"
-                                       FontFamily="Consolas"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1"
-                                       ToolTipService.ToolTip="{Binding CurrentZipEntry, Mode=OneWay}" />
+            </ScrollViewer>
+            <ScrollViewer x:Name="ExecutionSection" Grid.Column="1" VerticalAlignment="Top" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="16">
+                    <Border x:Name="ExecutionCard" Style="{StaticResource SectionCardStyle}">
+                        <StackPanel Spacing="20">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center" Foreground="{ThemeResource ApplicationAccentBrush}" />
+                                    <TextBlock Text="Execução" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding ProgressPercentage}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="18" />
+                            </Grid>
+                            <Grid x:Name="ExecutionGrid" RowSpacing="20" ColumnSpacing="20">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Spacing="12">
+                                    <ProgressBar Value="{Binding Progress}" Foreground="{ThemeResource ZipProgressBrush}">
+                                    </ProgressBar>
+                                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Status}" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    <TextBlock Text="{Binding CurrentZipEntry}" FontFamily="Consolas" FontSize="12" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding CurrentZipEntry}" />
+                                </StackPanel>
+                                <StackPanel x:Name="ExecutionSummary" Grid.Row="1" Spacing="12" Margin="0,8,0,0">
+                                    <TextBlock Text="Resumo do pacote" FontWeight="SemiBold" />
+                                    <TextBlock Text="Perfil selecionado" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    <TextBlock Text="{Binding SelectedIgnoreProfile.Name}" TextWrapping="Wrap" />
+                                    <TextBlock Text="Arquivo ZIP" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    <TextBlock Text="{Binding ZipNamePreview}" TextWrapping="Wrap" ToolTipService.ToolTip="{Binding ZipNamePreview}" />
+                                    <TextBlock Text="Destino" FontSize="12" Foreground="{ThemeResource ApplicationSubTextBrush}" />
+                                    <TextBlock Text="{Binding DestinationDirectory}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding DestinationDirectory}" />
+                                </StackPanel>
+                                <Grid x:Name="ExecutionActions" Grid.Row="2" RowSpacing="8" ColumnSpacing="8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Button x:Name="StartButton" Content="{Binding StartButtonText}" HorizontalAlignment="Stretch" Background="{ThemeResource ApplicationAccentBrush}" Foreground="White" FontWeight="SemiBold" Padding="16,12" Click="StartButton_Click" IsEnabled="{Binding IsNotProcessing}" />
+                                    <Button x:Name="CancelButton" Grid.Row="1" Content="Cancelar operação" HorizontalAlignment="Stretch" Click="CancelButton_Click" IsEnabled="{Binding CanCancel}" />
+                                </Grid>
+                            </Grid>
                         </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                            <Button x:Name="CancelButton" Content="Cancelar Operação" Padding="16,8"
-                                    Click="CancelButton_Click" 
-                                    IsEnabled="{Binding IsProcessing}" />
-                            <Button x:Name="StartButton" Content="Iniciar Compactação" 
-                                    Background="{ThemeResource ApplicationAccentBrush}" 
-                                    Foreground="White" FontWeight="Bold" Padding="32,10"
-                                    Click="StartButton_Click" 
-                                    IsEnabled="{Binding IsNotProcessing}" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>

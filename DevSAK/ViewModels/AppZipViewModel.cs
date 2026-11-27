@@ -2,6 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -20,7 +22,7 @@ namespace DevSAK.ViewModels
     /// <summary>
     /// ViewModel for the AppZip page, handling UI logic and settings management.
     /// </summary>
-    public class AppZipViewModel : INotifyPropertyChanged
+    public partial class AppZipViewModel : INotifyPropertyChanged
     {
         private readonly AppZipSettingsService _settingsService;
         private readonly AppZipCompressionService _compressionService;
@@ -50,11 +52,99 @@ namespace DevSAK.ViewModels
         /// </summary>
         public event EventHandler<string>? CompressionCompleted;
         
+        private AppZipUploadProvider _uploadProvider;
+        public AppZipUploadProvider UploadProvider
+        {
+            get => _uploadProvider;
+            set
+            {
+                if (!Enum.IsDefined(value)) value = AppZipUploadProvider.None;
+                if (_uploadProvider == value) return;
+                _uploadProvider = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(UploadToStorageTo));
+                OnPropertyChanged(nameof(IsUploadDisabled));
+                OnPropertyChanged(nameof(IsStorageToSelected));
+                OnPropertyChanged(nameof(IsFileKiwiSelected));
+                OnPropertyChanged(nameof(IsFtpSelected));
+                OnPropertyChanged(nameof(HasUploadDestination));
+                if (!IsLoading && !_applyingProfiles) PersistSettingsToDiskQuietly();
+            }
+        }
+
+        public bool IsUploadDisabled
+        {
+            get => UploadProvider == AppZipUploadProvider.None;
+            set { if (value) UploadProvider = AppZipUploadProvider.None; }
+        }
+        public bool IsStorageToSelected
+        {
+            get => UploadProvider == AppZipUploadProvider.StorageTo;
+            set { if (value) UploadProvider = AppZipUploadProvider.StorageTo; }
+        }
+        public bool IsFileKiwiSelected
+        {
+            get => UploadProvider == AppZipUploadProvider.FileKiwi;
+            set { if (value) UploadProvider = AppZipUploadProvider.FileKiwi; }
+        }
+
+        // Preserve callers and migrate the previous checkbox preference.
+        public bool IsFtpSelected
+        {
+            get => UploadProvider == AppZipUploadProvider.Ftp;
+            set { if (value) UploadProvider = AppZipUploadProvider.Ftp; }
+        }
+
+        public ObservableCollection<FtpDestination> FtpDestinations { get; } = new();
+        private FtpDestination? _selectedFtpDestination;
+        private bool _applyingFtpDestinations;
+        public FtpDestination? SelectedFtpDestination
+        {
+            get => _selectedFtpDestination;
+            set
+            {
+                if (ReferenceEquals(value, _selectedFtpDestination)) return;
+                _selectedFtpDestination = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasSelectedFtpDestination));
+                if (!IsLoading && !_applyingFtpDestinations && !_applyingProfiles) PersistSettingsToDiskQuietly();
+            }
+        }
+        public bool HasSelectedFtpDestination => SelectedFtpDestination != null;
+
+        public void ReloadFtpDestinations(IEnumerable<FtpDestination> destinations)
+        {
+            var selectedId = SelectedFtpDestination?.Id ?? _settings.SelectedFtpDestinationId;
+            _applyingFtpDestinations = true;
+            try
+            {
+                SelectedFtpDestination = null;
+                FtpDestinations.Clear();
+                foreach (var destination in destinations) FtpDestinations.Add(destination);
+                // Never silently substitute a different server when the saved one is gone.
+                SelectedFtpDestination = FtpDestinations.FirstOrDefault(destination => destination.Id == selectedId);
+            }
+            finally { _applyingFtpDestinations = false; }
+        }
+
+        public bool UploadToStorageTo
+        {
+            get => IsStorageToSelected;
+            set => UploadProvider = value ? AppZipUploadProvider.StorageTo : AppZipUploadProvider.None;
+        }
+
+        public string? UploadedUrl { get; private set; }
+        public string? UploadError { get; private set; }
+        public string? UploadedFtpPath { get; private set; }
+        public Func<string, IProgress<double>, CancellationToken, Task<string>>? FtpUploadRequested { get; set; }
+        public Func<string, IProgress<double>, CancellationToken, Task<string>>? UploadRequested { get; set; }
         public Func<string, Task<AppZipOverwriteChoice>>? ConfirmOverwriteRequested { get; set; }
 
-        public AppZipViewModel()
+        public AppZipViewModel() : this(AppZipSettingsService.Instance) { }
+
+        public AppZipViewModel(AppZipSettingsService settingsService)
         {
-            _settingsService = AppZipSettingsService.Instance;
+            _settingsService = settingsService;
             _compressionService = new AppZipCompressionService();
             _settings = new AppZipSettings();
 
@@ -63,6 +153,9 @@ namespace DevSAK.ViewModels
             IgnoredFilesList = new ObservableCollection<string>();
             IgnoredFoldersList = new ObservableCollection<string>();
             IgnoredExtensionsList = new ObservableCollection<string>();
+            IgnoredFilesList.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoIgnoredFiles));
+            IgnoredFoldersList.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoIgnoredFolders));
+            IgnoredExtensionsList.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoIgnoredExtensions));
 
             // If automatic mode is enabled by default, generate an initial automatic zip name
             if (_useAutomaticZipName)
@@ -72,6 +165,119 @@ namespace DevSAK.ViewModels
         }
 
         #region Properties
+
+        public bool HasNoIgnoredFiles => IgnoredFilesList.Count == 0;
+        public bool HasNoIgnoredFolders => IgnoredFoldersList.Count == 0;
+        public bool HasNoIgnoredExtensions => IgnoredExtensionsList.Count == 0;
+
+        public ObservableCollection<AppZipIgnoreProfile> IgnoreProfiles { get; } = new();
+        private AppZipIgnoreProfile? _selectedIgnoreProfile;
+        private bool _applyingProfiles;
+
+        public AppZipIgnoreProfile? SelectedIgnoreProfile
+        {
+            get => _selectedIgnoreProfile;
+            set
+            {
+                if (value == null || ReferenceEquals(value, _selectedIgnoreProfile)) return;
+                CaptureSelectedProfile();
+                _selectedIgnoreProfile = value;
+                _settings.SelectedIgnoreProfileId = value.Id;
+                ApplySelectedProfile();
+                OnPropertyChanged();
+                if (!_applyingProfiles) PersistProfileChanges();
+            }
+        }
+
+        public void CreateIgnoreProfile(string name)
+        {
+            var profile = new AppZipIgnoreProfile { Name = ValidateProfileName(name) };
+            IgnoreProfiles.Add(profile);
+            SelectedIgnoreProfile = profile;
+        }
+
+        public void RenameIgnoreProfile(string name)
+        {
+            if (SelectedIgnoreProfile == null) return;
+            SelectedIgnoreProfile.Name = ValidateProfileName(name, SelectedIgnoreProfile);
+            OnPropertyChanged(nameof(SelectedIgnoreProfile));
+            PersistProfileChanges();
+        }
+
+        public void DeleteIgnoreProfile()
+        {
+            if (SelectedIgnoreProfile == null) return;
+            if (IgnoreProfiles.Count == 1)
+                throw new InvalidOperationException("Mantenha pelo menos um perfil. Crie outro perfil antes de excluir este.");
+            var removed = SelectedIgnoreProfile;
+            SelectedIgnoreProfile = IgnoreProfiles.First(profile => profile != removed);
+            IgnoreProfiles.Remove(removed);
+            PersistProfileChanges();
+        }
+
+        public void ImportIgnoreProfile(string json, bool replaceExisting)
+        {
+            var imported = AppZipProfileJson.Deserialize(json);
+            var existing = IgnoreProfiles.FirstOrDefault(profile =>
+                profile.Name.Equals(imported.Name, StringComparison.OrdinalIgnoreCase));
+            if (existing != null && !replaceExisting)
+                throw new InvalidOperationException("Já existe um perfil com esse nome.");
+            if (existing != null)
+            {
+                imported.Id = existing.Id;
+                IgnoreProfiles[IgnoreProfiles.IndexOf(existing)] = imported;
+            }
+            else IgnoreProfiles.Add(imported);
+            SelectedIgnoreProfile = imported;
+            PersistProfileChanges();
+        }
+
+        public string ExportIgnoreProfile()
+        {
+            CaptureSelectedProfile();
+            return AppZipProfileJson.Serialize(SelectedIgnoreProfile
+                ?? throw new InvalidOperationException("Selecione um perfil para exportar."));
+        }
+
+        private string ValidateProfileName(string name, AppZipIgnoreProfile? current = null)
+        {
+            name = name.Trim();
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Informe um nome para o perfil.");
+            if (IgnoreProfiles.Any(profile => profile != current && profile.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Já existe um perfil com esse nome.");
+            return name;
+        }
+
+        private void CaptureSelectedProfile()
+        {
+            if (_selectedIgnoreProfile == null) return;
+            _selectedIgnoreProfile.IgnoredFiles = IgnoredFilesList.ToList();
+            _selectedIgnoreProfile.IgnoredFolders = IgnoredFoldersList.ToList();
+            _selectedIgnoreProfile.IgnoredExtensions = IgnoredExtensionsList.ToList();
+        }
+
+        private void ApplySelectedProfile()
+        {
+            if (_selectedIgnoreProfile == null) return;
+            ReplaceRules(IgnoredFilesList, _selectedIgnoreProfile.IgnoredFiles);
+            ReplaceRules(IgnoredFoldersList, _selectedIgnoreProfile.IgnoredFolders);
+            ReplaceRules(IgnoredExtensionsList, _selectedIgnoreProfile.IgnoredExtensions);
+            IgnoredFiles = string.Join(";", IgnoredFilesList);
+            IgnoredFolders = string.Join(";", IgnoredFoldersList);
+            IgnoredExtensions = string.Join(";", IgnoredExtensionsList);
+        }
+
+        private static void ReplaceRules(ObservableCollection<string> target, IEnumerable<string> rules)
+        {
+            target.Clear();
+            foreach (var rule in rules) target.Add(rule);
+        }
+
+        private void PersistProfileChanges()
+        {
+            ApplyUIToSettings();
+            _settingsService.SaveSettings(_settings);
+        }
 
         public string SourceDirectory
         {
@@ -99,6 +305,10 @@ namespace DevSAK.ViewModels
             }
         }
 
+        public string ZipNamePreview => string.IsNullOrWhiteSpace(ZipName)
+            ? (UseAutomaticZipName ? "Deploy_yyyyMMdd_HHmmss.zip (data e hora ao iniciar)" : "Informe o nome do ZIP")
+            : (ZipName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? ZipName : ZipName + ".zip");
+
         public string ZipName
         {
             get => _zipName;
@@ -108,6 +318,7 @@ namespace DevSAK.ViewModels
                 {
                     _zipName = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ZipNamePreview));
                 }
             }
         }
@@ -121,6 +332,7 @@ namespace DevSAK.ViewModels
                 {
                     _useAutomaticZipName = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ZipNamePreview));
 
                     // CORREÇÃO: Quando marcado como automático, limpa o campo. 
                     // O nome real será gerado apenas na hora de iniciar o processo.
@@ -147,6 +359,7 @@ namespace DevSAK.ViewModels
                 {
                     _startDate = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(StartDateOffset));
                 }
             }
         }
@@ -214,6 +427,8 @@ namespace DevSAK.ViewModels
                     OperationActivity.SetBusy(this, value);
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IsNotProcessing));
+                    OnPropertyChanged(nameof(CanCancel));
+                    OnPropertyChanged(nameof(CanNavigate));
                 }
             }
         }
@@ -285,7 +500,7 @@ namespace DevSAK.ViewModels
                     if (!value)
                         StartDate = null;
                     else if (StartDate == null)
-                        StartDate = DateTime.Now;
+                        StartDate = DateTime.Today;
 
                     OnPropertyChanged();
                 }
@@ -548,6 +763,15 @@ namespace DevSAK.ViewModels
         /// </summary>
         public async Task StartCompressionAsync()
         {
+            if (IsProcessing) return;
+            if (IsChoosingUploadDestination) { await UploadExistingZipAsync(); return; }
+            if (IsFtpSelected && SelectedFtpDestination == null)
+            {
+                Status = "Selecione ou cadastre um destino FTP antes de iniciar.";
+                return;
+            }
+            if (UseDateFilter && !StartDate.HasValue)
+                StartDate = DateTime.Today;
             // Validate inputs
             if (string.IsNullOrWhiteSpace(SourceDirectory))
             {
@@ -611,6 +835,12 @@ namespace DevSAK.ViewModels
                 IsProcessing = true;
                 _cancellationTokenSource = new CancellationTokenSource();
 
+                UploadedUrl = null;
+                UploadedFtpPath = null;
+                UploadError = null;
+                LocalZipDeleted = false;
+                CleanupWarning = null;
+                PendingZipPath = null;
                 Progress = 0;
                 CurrentZipEntry = string.Empty;
                 Status = "Preparando compactação...";
@@ -619,8 +849,10 @@ namespace DevSAK.ViewModels
                 var ignoredFoldersStr = string.Join(";", IgnoredFoldersList);
                 var ignoredExtensionsStr = string.Join(";", IgnoredExtensionsList);
 
+                bool uploadStarted = false;
                 var combinedProgress = new Progress<AppZipCompressionProgress>(report =>
                 {
+                    if (uploadStarted || !IsProcessing) return;
                     Status = report.Status;
                     CurrentZipEntry = report.CurrentEntryRelativePath ?? string.Empty;
                     Progress = Math.Clamp(report.Percent, 0, 100);
@@ -645,8 +877,12 @@ namespace DevSAK.ViewModels
                     return;
                 }
 
-                // Ocorreu tudo bem!
                 await SaveSettingsAsync();
+                if (UploadProvider != AppZipUploadProvider.None)
+                {
+                    uploadStarted = true;
+                    await UploadZipCoreAsync(zipPath);
+                }
                 OnCompressionCompleted(zipPath);
             }
             catch (OperationCanceledException)
@@ -673,6 +909,13 @@ namespace DevSAK.ViewModels
         public void CancelCompression()
         {
             _cancellationTokenSource?.Cancel();
+            if (!IsProcessing)
+            {
+                FinishUploadRecovery();
+                Progress = 0;
+                CurrentZipEntry = string.Empty;
+                Status = "Pronto para iniciar";
+            }
         }
 
         /// <summary>
@@ -683,6 +926,7 @@ namespace DevSAK.ViewModels
             _settingsService.ClearCache();
             _settings = new AppZipSettings();
             ClearUI();
+            ApplySettingsToUI();
         }
 
         #endregion
@@ -704,53 +948,39 @@ namespace DevSAK.ViewModels
             }
             StartDate = _settings.StartDate;
             UseDateFilter = _settings.UseDateFilter;
+            DeleteZipAfterUpload = _settings.DeleteZipAfterUpload;
 
-            // Load ignore lists
-            IgnoredFilesList.Clear();
-            if (!string.IsNullOrEmpty(_settings.IgnoredFiles))
+            _applyingProfiles = true;
+            try
             {
-                foreach (var item in _settings.IgnoredFiles.Split(';'))
-                {
-                    var trimmed = item.Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
-                        IgnoredFilesList.Add(trimmed);
-                }
+                UploadProvider = _settings.UploadProvider ?? (_settings.UploadToStorageTo ? AppZipUploadProvider.StorageTo : AppZipUploadProvider.None);
+                SelectedFtpDestination = FtpDestinations.FirstOrDefault(destination => destination.Id == _settings.SelectedFtpDestinationId);
+                _settings.EnsureIgnoreProfiles();
+                _selectedIgnoreProfile = null;
+                IgnoreProfiles.Clear();
+                foreach (var profile in _settings.IgnoreProfiles) IgnoreProfiles.Add(profile);
+                SelectedIgnoreProfile = IgnoreProfiles.First(profile => profile.Id == _settings.SelectedIgnoreProfileId);
             }
-
-            IgnoredFoldersList.Clear();
-            if (!string.IsNullOrEmpty(_settings.IgnoredFolders))
-            {
-                foreach (var item in _settings.IgnoredFolders.Split(';'))
-                {
-                    var trimmed = item.Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
-                        IgnoredFoldersList.Add(trimmed);
-                }
-            }
-
-            IgnoredExtensionsList.Clear();
-            if (!string.IsNullOrEmpty(_settings.IgnoredExtensions))
-            {
-                foreach (var item in _settings.IgnoredExtensions.Split(';'))
-                {
-                    var trimmed = item.Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
-                        IgnoredExtensionsList.Add(trimmed);
-                }
-            }
-
+            finally { _applyingProfiles = false; }
             UpdateRecentSourceDirectoriesUI();
             UpdateRecentDestinationDirectoriesUI();
         }
 
         private void ApplyUIToSettings()
         {
+            CaptureSelectedProfile();
+            _settings.IgnoreProfiles = IgnoreProfiles.ToList();
+            _settings.SelectedIgnoreProfileId = SelectedIgnoreProfile?.Id;
             _settings.SourceDirectory = SourceDirectory;
             _settings.DestinationDirectory = DestinationDirectory;
             _settings.ZipName = ZipName;
             _settings.UseAutomaticZipName = UseAutomaticZipName;
             _settings.StartDate = StartDate;
             _settings.UseDateFilter = UseDateFilter;
+            _settings.UploadToStorageTo = UploadToStorageTo;
+            _settings.UploadProvider = UploadProvider;
+            _settings.DeleteZipAfterUpload = DeleteZipAfterUpload;
+            _settings.SelectedFtpDestinationId = SelectedFtpDestination?.Id;
             _settings.IgnoredFiles = string.Join(";", IgnoredFilesList);
             _settings.IgnoredFolders = string.Join(";", IgnoredFoldersList);
             _settings.IgnoredExtensions = string.Join(";", IgnoredExtensionsList);

@@ -8,7 +8,7 @@ namespace DevSAK.Services
 {
     /// <summary>
     /// Service for managing AppZip settings persistence.
-    /// Stores settings as JSON in AppData\DevSAK\AppZip\settings.json
+    /// Stores settings as JSON in AppData\DevSAK\AppZipSettings.json
     /// </summary>
     public class AppZipSettingsService
     {
@@ -30,12 +30,16 @@ namespace DevSAK.Services
             PropertyNameCaseInsensitive = true
         };
 
-        private AppZipSettingsService()
+        private AppZipSettingsService() : this(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DevSAK"))
+        {
+        }
+
+        public AppZipSettingsService(string settingsDirectory)
         {
             // Create AppData\DevSAK directory structure
             // Store as %AppData%\DevSAK\AppZipSettings.json (as per requirements)
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            _settingsDirectory = Path.Combine(appDataPath, "DevSAK");
+            _settingsDirectory = settingsDirectory;
             _settingsFilePath = Path.Combine(_settingsDirectory, "AppZipSettings.json");
 
             // Ensure directory exists
@@ -67,6 +71,7 @@ namespace DevSAK.Services
                 if (!File.Exists(_settingsFilePath))
                 {
                     _cachedSettings = new AppZipSettings();
+                    _cachedSettings.EnsureIgnoreProfiles();
                     return _cachedSettings;
                 }
 
@@ -75,13 +80,16 @@ namespace DevSAK.Services
                 _cachedSettings = JsonSerializer.Deserialize<AppZipSettings>(json, JsonOptions) 
                     ?? new AppZipSettings();
 
+                if (_cachedSettings.EnsureIgnoreProfiles())
+                    await SaveSettingsAsync(_cachedSettings);
                 return _cachedSettings;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading AppZip settings: {ex}");
                 // Return default settings on error
-                _cachedSettings = new AppZipSettings();
+                _cachedSettings ??= new AppZipSettings();
+                _cachedSettings.EnsureIgnoreProfiles();
                 return _cachedSettings;
             }
         }
@@ -101,6 +109,7 @@ namespace DevSAK.Services
                 if (!File.Exists(_settingsFilePath))
                 {
                     _cachedSettings = new AppZipSettings();
+                    _cachedSettings.EnsureIgnoreProfiles();
                     return _cachedSettings;
                 }
 
@@ -109,13 +118,16 @@ namespace DevSAK.Services
                 _cachedSettings = JsonSerializer.Deserialize<AppZipSettings>(json, JsonOptions) 
                     ?? new AppZipSettings();
 
+                if (_cachedSettings.EnsureIgnoreProfiles())
+                    SaveSettings(_cachedSettings);
                 return _cachedSettings;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading AppZip settings: {ex}");
                 // Return default settings on error
-                _cachedSettings = new AppZipSettings();
+                _cachedSettings ??= new AppZipSettings();
+                _cachedSettings.EnsureIgnoreProfiles();
                 return _cachedSettings;
             }
         }
@@ -135,7 +147,9 @@ namespace DevSAK.Services
 
                 // Serialize and write to file
                 var json = JsonSerializer.Serialize(settings, JsonOptions);
-                await File.WriteAllTextAsync(_settingsFilePath, json);
+                var temporaryPath = _settingsFilePath + ".tmp";
+                await File.WriteAllTextAsync(temporaryPath, json);
+                File.Move(temporaryPath, _settingsFilePath, overwrite: true);
             }
             catch (Exception ex)
             {
@@ -159,7 +173,9 @@ namespace DevSAK.Services
 
                 // Serialize and write to file
                 var json = JsonSerializer.Serialize(settings, JsonOptions);
-                File.WriteAllText(_settingsFilePath, json);
+                var temporaryPath = _settingsFilePath + ".tmp";
+                File.WriteAllText(temporaryPath, json);
+                File.Move(temporaryPath, _settingsFilePath, overwrite: true);
             }
             catch (Exception ex)
             {

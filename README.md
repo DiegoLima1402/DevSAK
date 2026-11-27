@@ -7,7 +7,7 @@
 
 **DevSAK** (*Developer Swiss Army Knife*) é uma suíte desktop para Windows com utilitários do dia a dia de desenvolvimento: compactação ZIP, certificados, backup/restauração MySQL e teste SMTP.
 
-Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interface em Mica e ferramentas CLI embarcadas. Versão atual do projeto: **1.3.3**.
+Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interface em Mica e ferramentas CLI embarcadas. Versão atual do projeto: **1.3.4**.
 
 ---
 
@@ -15,7 +15,7 @@ Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interfac
 
 | Ferramenta | O que faz |
 | --- | --- |
-| **Compactador (ZIP)** | Gera `.zip` a partir de um diretório, com nome manual ou timestamp, filtro por data, listas de ignore e progresso com cancelamento. |
+| **Compactador (ZIP)** | Gera `.zip` a partir de um diretório, com nome manual ou timestamp, filtro por data, perfis de regras de exclusão com importação/exportação JSON, upload para StorageTo/File.Kiwi/FTP e progresso com cancelamento. |
 | **Ferramentas de certificado** | Exporta PEM (`.pfx`, `.p12`, `.cer`, `.crt`) e valida certificados (Subject, Issuer, validade, thumbprint, SAN/DNS, etc.). |
 | **MySQL Backup / Restore** | Perfis de conexão, backup configurável com `mysqldump`, restore de `.sql`/arquivos compactados, opção de compactar o backup em ZIP e criação de banco quando aplicável. |
 | **Testar SMTP** | Envia mensagem de teste via MailKit (SSL/STARTTLS, autenticação) e exibe o resultado no console. |
@@ -25,6 +25,16 @@ Construído em **C#**, **.NET 8** e **WinUI 3**, com tema claro/escuro, interfac
 ## Interface
 
 Dashboard com cards, ícones Fluent e alternância de tema. O tema escolhido é gravado em `%AppData%\DevSAK` e restaurado na próxima execução.
+
+Os cards das ferramentas seguem o mesmo padrão: ícone na cor de destaque e
+título dentro do card, cantos de 12 px e espaçamento interno de 24 px. Cards de
+console ou log mantêm apenas o título. O padrão também cobre Compactador ZIP,
+Exportar PEM e Validar Certificado. Todas as barras de progresso têm espessura
+de 8 px, definida globalmente, inclusive a barra do atualizador. No compactador,
+Filtro por data, Configurações do pacote e Execução ficam alinhados pelo topo.
+
+Veja as convenções em [docs/INTERFACE.md](docs/INTERFACE.md). As capturas abaixo
+são ilustrativas e podem representar versões anteriores da interface.
 
 | Tema claro | Tema escuro |
 | --- | --- |
@@ -51,6 +61,7 @@ Stack efetivamente usada no projeto:
 - **XAML** (páginas, temas e janela principal)
 - **CommunityToolkit.WinUI.Controls.Segmented**
 - **MailKit / MimeKit** (SMTP) e **BouncyCastle** (exportação PEM)
+- **FluentFTP** (upload FTP/FTPS e navegação remota)
 - **MySqlConnector** (operações auxiliares MySQL)
 - **System.IO.Compression** (ZIP nativo)
 - **System.Text.Json** e **System.Security.Cryptography.ProtectedData** (configurações e senhas no escopo do usuário Windows)
@@ -154,7 +165,7 @@ dotnet publish .\DevSAK\DevSAK.csproj -c Release -p:Platform=x64 -p:PublishProfi
 O diretório `Installer/` contém o script Inno Setup e os arquivos de apoio (`LICENSE.txt`, `INFO_BEFORE.txt`, `INFO_AFTER.txt`, ícone, bootstrapper do WebView2).
 
 - O setup instala o **conteúdo** de `publish` para o usuário atual (`%LocalAppData%\Programs\DevSAK`).
-- A saída gerada (`Installer/output/`, por exemplo `DevSAK_Installer_v1.3.3.exe`) não deve ser commitada (está no `.gitignore`).
+- A saída gerada (`Installer/output/`, por exemplo `DevSAK_Installer_v1.3.4.exe`) não deve ser commitada (está no `.gitignore`).
 - Detalhes para quem mantém o instalador: `Installer/README.md`.
 
 ---
@@ -167,6 +178,18 @@ atualizações** permite consultar manualmente. O aviso mostra versão, tamanho 
 notas da Release; o usuário autoriza o download, acompanha o progresso e pode
 cancelá-lo. Depois, **Instalar e reiniciar** aplica a atualização quando todas as
 ferramentas estiverem ociosas, preservando as configurações em AppData.
+
+O **próprio DevSAK baixa o instalador**, sem abrir o navegador ou redirecionar
+o usuário para a página de download. A sequência é **Ver atualização → Baixar
+atualização → Instalar e reiniciar**. O download fica em
+`%LocalAppData%\DevSAK\Updates\<id>`; após a verificação de tamanho e SHA-256,
+o instalador aplica a versão e reabre o aplicativo.
+
+Para testar a atualização para **1.3.4**, use uma cópia **1.3.3** instalada pelo
+instalador oficial x64 no usuário atual. Publique a release estável `v1.3.4`
+com `DevSAK_Installer_v1.3.4.exe`, então clique em **Verificar atualizações**
+nessa cópia antiga. Tags, commits ou releases em rascunho não bastam. Uma
+cópia já na 1.3.4 não oferece atualização para a mesma versão.
 
 O atualizador aceita apenas Releases estáveis com um instalador oficial x64 e
 SHA-256 válido, conferido após o download e novamente antes da execução. A
@@ -183,12 +206,61 @@ Gravadas em `%AppData%\DevSAK` (fora da pasta de instalação):
 | Arquivo | Uso |
 | --- | --- |
 | `appsettings.json` | Tema e última versão das notas de release |
-| `AppZipSettings.json` | Compactador ZIP |
+| `AppZipSettings.json` | Compactador ZIP, destino selecionado e exclusão após upload |
+| `ftp-destinations.json` | Cadastro global de destinos FTP/FTPS com senhas protegidas |
+| `storageto.key` | Chave de API do StorageTo protegida por DPAPI |
+| `storageto.visitor` | Identificador persistente para uploads anônimos |
 | `SmtpTestSettings.json` | Teste SMTP |
 | `MySqlConnections.json` | Perfis MySQL |
 | `MySqlBackupRestoreSettings.json` | Preferências de backup/restore |
 
 Senhas das ferramentas usam DPAPI (`ProtectedData`) no escopo do usuário Windows.
+
+### Perfis do Compactador ZIP
+
+Selecione um perfil para aplicar suas regras de arquivos, pastas e extensões. Use **+** para criar um perfil e o menu **⋯** ao lado do seletor para renomear ou excluir o perfil selecionado; as alterações nas regras são salvas automaticamente. O último perfil selecionado é restaurado ao reabrir a ferramenta. Deve existir pelo menos um perfil.
+
+Em telas largas, configurações do pacote, regras e execução ficam lado a lado. Ao reduzir a janela, a execução passa para um rodapé fixo e os editores se reorganizam. As listas de regras aproveitam a altura disponível e as abas mostram a quantidade de itens. A execução apresenta um resumo do perfil, nome do ZIP e destino; no modo automático, o timestamp é definido ao iniciar.
+
+Os perfis ficam em uma coleção no arquivo local `AppZipSettings.json`. Na atualização, as regras anteriores são migradas automaticamente para um perfil **GERAL**, preservando as demais configurações do compactador.
+
+Para compartilhar ou editar externamente, **Exportar JSON** gera um arquivo com apenas o perfil selecionado, sem caminhos locais ou histórico. **Importar JSON** aceita um perfil por arquivo e solicita confirmação antes de substituir outro com o mesmo nome (sem diferenciar maiúsculas de minúsculas).
+
+Exemplo de arquivo que pode ser criado manualmente e importado:
+
+```json
+{
+  "Version": 1,
+  "Name": "NODE + REACT",
+  "IgnoredFiles": [".env", ".env.local"],
+  "IgnoredFolders": ["node_modules", ".git"],
+  "IgnoredExtensions": [".map", ".log"]
+}
+```
+
+Cada lista aceita uma regra por item, com os mesmos padrões de exclusão já utilizados pela ferramenta. Informe as extensões com ponto (por exemplo, `.log`); a importação também aceita `log` e acrescenta o ponto automaticamente. Novos perfis começam com as três listas vazias.
+
+Validação automatizada da migração, perfis, JSON e geração de ZIPs: `dotnet run --project tests/DevSAK.AppZipTests/DevSAK.AppZipTests.csproj`.
+
+### Upload do ZIP
+
+No card **Opções de Upload**, selecione **Não fazer upload**, **StorageTo**, **File.Kiwi** ou **FTP**. Ao escolher um serviço, o arquivo é enviado assim que a compactação termina. A barra reinicia e mostra o progresso do envio; após a confirmação, **Copiar Link** copia o endereço compartilhável. O ZIP permanece no diretório de destino em falhas ou cancelamentos. A opção **Excluir o ZIP local após o upload bem-sucedido** remove o arquivo somente após a confirmação do destino. A escolha é salva; a opção antiga de upload habilitado migra para StorageTo.
+
+O botão **Configurações** (engrenagem entre atualização e tema) permite salvar a chave de API do StorageTo, protegida para o usuário atual do Windows. A chave é validada antes de enviar; uma chave inválida precisa ser corrigida ou removida. Sem chave, o upload é anônimo. O envio usa a [API oficial](https://storage.to/pt/docs/api), com suporte a arquivos em partes.
+
+Testes do protocolo com respostas simuladas: `dotnet run --project tests/DevSAK.StorageToTests/DevSAK.StorageToTests.csproj`.
+
+O **File.Kiwi** usa a [API v2](https://file.kiwi/api), sem chave de API. O nome e o conteúdo do ZIP são criptografados localmente no formato RFC 8188 (AES-128-GCM), em partes enviadas sequencialmente. O link copiado inclui a chave de descriptografia no fragmento após `#`; compartilhe o link completo para permitir o download. O serviço só é considerado concluído após confirmar o recebimento de todas as partes.
+
+Testes com respostas simuladas e vetor oficial de criptografia: `dotnet run --project tests/DevSAK.FileKiwiTests/DevSAK.FileKiwiTests.csproj`.
+
+O **FTP** permite cadastrar vários destinos globais, reutilizáveis por outras ferramentas: descrição (ou host quando vazia), host, porta, usuário, senha, FTP/FTPS explícito/implícito, modo passivo e pasta remota. Use **+** para adicionar e **⋯** para editar ou excluir. O cadastro oferece navegação de pastas após uma conexão válida, valida os campos antes de conectar e mostra erros técnicos do servidor. O modo passivo tem tooltip explicativo, e a senha pode ser mostrada ou ocultada com um clique. Arquivos remotos existentes exigem confirmação antes da substituição.
+
+Em falhas de upload, **Tentar Novamente** reenvia o ZIP existente. **Selecionar Outro Destino** mostra apenas upload e execução, com o botão **Enviar Arquivo**; **Cancelar operação** preserva o ZIP e restaura a tela completa. Se a remoção local falhar após o sucesso remoto, o diálogo informa o problema sem repetir o envio.
+
+Com a exclusão após upload marcada, o modal de sucesso omite **Abrir Pasta**. Para StorageTo/File.Kiwi, mantém **Copiar Link** e **Fechar**; para FTP, sem link compartilhável, mantém **Fechar**.
+
+Confira os detalhes e os comandos de teste em [docs/ZIP_UPLOAD.md](docs/ZIP_UPLOAD.md).
 
 ---
 

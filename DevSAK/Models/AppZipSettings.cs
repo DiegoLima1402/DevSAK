@@ -8,6 +8,36 @@ namespace DevSAK.Models
     /// </summary>
     public class AppZipSettings
     {
+        public List<AppZipIgnoreProfile> IgnoreProfiles { get; set; } = new();
+        public string? SelectedIgnoreProfileId { get; set; }
+        public bool UploadToStorageTo { get; set; }
+        public AppZipUploadProvider? UploadProvider { get; set; }
+        public string? SelectedFtpDestinationId { get; set; }
+        public bool DeleteZipAfterUpload { get; set; }
+
+        /// <summary>Migrates legacy rules once, preserving their original matching behavior.</summary>
+        public bool EnsureIgnoreProfiles()
+        {
+            IgnoreProfiles ??= new();
+            bool migrated = IgnoreProfiles.Count == 0;
+            if (migrated)
+            {
+                IgnoreProfiles.Add(new AppZipIgnoreProfile
+                {
+                    Name = "GERAL",
+                    IgnoredFiles = SplitLegacyRules(IgnoredFiles),
+                    IgnoredFolders = SplitLegacyRules(IgnoredFolders),
+                    IgnoredExtensions = SplitLegacyRules(IgnoredExtensions)
+                });
+            }
+            if (!IgnoreProfiles.Exists(profile => profile.Id == SelectedIgnoreProfileId))
+                SelectedIgnoreProfileId = IgnoreProfiles[0].Id;
+            return migrated;
+        }
+
+        private static List<string> SplitLegacyRules(string? rules) => new(
+            (rules ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
         /// <summary>
         /// Source directory path to compress.
         /// </summary>
